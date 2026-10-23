@@ -159,10 +159,10 @@ export function AdminDashboard() {
                     </td>
                     <td className="text-right">
                       <Link
-                        to={`/family/${fam.id || fam.familyId}`}
+                        to={`/admin/families/${fam.id || fam.familyId}`}
                         className="btn btn-secondary btn-xs"
                       >
-                        Open
+                        Manage
                       </Link>
                       <Link
                         to={`/admin/families/${fam.id || fam.familyId}/edit`}

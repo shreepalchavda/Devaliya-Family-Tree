@@ -38,10 +38,13 @@ const COMMON_RELATIONSHIPS = [
   "Other (અન્ય સંબંધ લખો)"
 ];
 
-export function FamilyDetails() {
+export function FamilyDetails({ isAdminView = false }) {
   const { familyId } = useParams();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
+  
+  // Show admin controls ONLY if currently in Admin View
+  const showAdminControls = isAdminView && isAdmin;
 
   const [family, setFamily] = useState(null);
   const [members, setMembers] = useState([]);
@@ -201,12 +204,12 @@ export function FamilyDetails() {
     <main className="page-container">
       {/* Top Navigation */}
       <div className="page-top-nav">
-        <Link to="/" className="back-link">
+        <Link to={showAdminControls ? "/admin/families" : "/"} className="back-link">
           <ArrowLeft size={18} />
-          <span>Back to All Families</span>
+          <span>{showAdminControls ? "Back to Manage Families" : "Back to All Families"}</span>
         </Link>
 
-        {isAdmin && (
+        {showAdminControls && (
           <div className="admin-actions-bar">
             <button
               onClick={() => {
@@ -277,7 +280,7 @@ export function FamilyDetails() {
             <h2>Family Members (કુટુંબના સભ્યોની યાદી)</h2>
             <p>Including the family head and all associated members</p>
           </div>
-          {isAdmin && (
+          {showAdminControls && (
             <button
               onClick={() => {
                 setQuickMemError("");
