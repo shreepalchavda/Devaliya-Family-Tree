@@ -9,8 +9,14 @@ export default defineConfig({
       name: 'admin-spa-rewrite',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
-          // If request has no file extension (SPA route), serve admin.html
-          if (req.url && (!req.url.includes('.') || req.url === '/')) {
+          if (
+            req.url &&
+            !req.url.startsWith('/@') &&
+            !req.url.startsWith('/node_modules') &&
+            !req.url.startsWith('/src') &&
+            !req.url.startsWith('/public') &&
+            !req.url.includes('.')
+          ) {
             req.url = '/admin.html';
           }
           next();
