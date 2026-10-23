@@ -1,7 +1,11 @@
-import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// https://vite.dev/config/
+// Configuration for Public Family Directory (Port 5173)
 export default defineConfig({
   plugins: [react()],
-})
+  server: {
+    port: 5173,
+    host: true
+  }
+});
