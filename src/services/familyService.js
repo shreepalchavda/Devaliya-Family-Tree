@@ -64,12 +64,15 @@ export async function getFamilyById(familyId) {
 }
 
 /**
- * Creates a new family and automatically creates the corresponding member record for the family head.
+ * Creates a new family and automatically creates the corresponding member record for the family head
+ * and any additional family members added in the same step.
  * @param {object} familyData
  * @param {object} headMemberData
+ * @param {Array} additionalMembers
  */
-export async function createFamilyWithHead(familyData, headMemberData = {}) {
+export async function createFamilyWithHead(familyData, headMemberData = {}, additionalMembers = []) {
   const now = new Date().toISOString();
+  const totalCount = 1 + (additionalMembers ? additionalMembers.length : 0);
 
   if (isFirebaseConfigured && db) {
     try {
@@ -112,7 +115,7 @@ export async function createFamilyWithHead(familyData, headMemberData = {}) {
         headFullName: familyData.headFullName,
         originalVillage: familyData.originalVillage,
         matajiMadhSthal: familyData.matajiMadhSthal,
-        memberCount: 1,
+        memberCount: totalCount,
         isPublic: true,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
@@ -120,6 +123,23 @@ export async function createFamilyWithHead(familyData, headMemberData = {}) {
 
       batch.set(familyRef, familyPayload);
       batch.set(memberRef, headMemberPayload);
+
+      // 5. Add all additional members
+      if (Array.isArray(additionalMembers) && additionalMembers.length > 0) {
+        additionalMembers.forEach((extraMem) => {
+          const extraMemberRef = doc(collection(db, MEMBERS_COLLECTION));
+          const extraId = extraMemberRef.id;
+          const extraPayload = {
+            ...extraMem,
+            memberId: extraId,
+            familyId: familyId,
+            isPublic: true,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          };
+          batch.set(extraMemberRef, extraPayload);
+        });
+      }
 
       await batch.commit();
       return { id: familyId, ...familyPayload, headMemberId };
@@ -164,7 +184,7 @@ export async function createFamilyWithHead(familyData, headMemberData = {}) {
     headFullName: familyData.headFullName,
     originalVillage: familyData.originalVillage,
     matajiMadhSthal: familyData.matajiMadhSthal,
-    memberCount: 1,
+    memberCount: totalCount,
     isPublic: true,
     createdAt: now,
     updatedAt: now
@@ -172,6 +192,22 @@ export async function createFamilyWithHead(familyData, headMemberData = {}) {
 
   families.unshift(newFamily);
   members.unshift(headMember);
+
+  // Add additional members to local store
+  if (Array.isArray(additionalMembers) && additionalMembers.length > 0) {
+    additionalMembers.forEach((extraMem, idx) => {
+      const extraId = "mem-" + (Date.now() + idx + 1);
+      members.push({
+        ...extraMem,
+        id: extraId,
+        memberId: extraId,
+        familyId: familyId,
+        isPublic: true,
+        createdAt: now,
+        updatedAt: now
+      });
+    });
+  }
 
   saveLocalFamilies(families);
   saveLocalMembers(members);

@@ -105,8 +105,8 @@ export function MemberForm({
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleFormSubmit = async (e, isAddAnother = false) => {
+    if (e && e.preventDefault) e.preventDefault();
     if (!validate()) return;
 
     let finalPhotoUrl = photoUrl;
@@ -143,7 +143,27 @@ export function MemberForm({
       isPublicAddress
     };
 
-    onSubmit(payload);
+    onSubmit(payload, isAddAnother);
+
+    if (isAddAnother) {
+      // Clear fields for the next member
+      setFullName("");
+      setRelationshipType("પુત્ર (Son)");
+      setCustomRelationship("");
+      setDateOfBirth("");
+      setEducation("");
+      setOccupation("");
+      setWorkplaceAddress("");
+      setMobileNumber("");
+      setPhotoUrl("");
+      setPhotoFile(null);
+      setPhotoPreview("");
+      setErrors({});
+    }
+  };
+
+  const handleSubmit = (e) => {
+    handleFormSubmit(e, false);
   };
 
   return (
@@ -372,12 +392,23 @@ export function MemberForm({
       </div>
 
       <div className="form-actions">
+        {!isEdit && (
+          <button
+            type="button"
+            className="btn btn-secondary btn-lg"
+            onClick={(e) => handleFormSubmit(e, true)}
+            disabled={isSubmitting || uploadingPhoto}
+          >
+            + Save & Add Another (સાચવો અને બીજો ઉમેરો)
+          </button>
+        )}
         <button
-          type="submit"
+          type="button"
+          onClick={(e) => handleFormSubmit(e, false)}
           className="btn btn-primary btn-lg"
           disabled={isSubmitting || uploadingPhoto}
         >
-          {isSubmitting || uploadingPhoto ? "Saving..." : isEdit ? "Update Member Profile" : "Save Family Member"}
+          {isSubmitting || uploadingPhoto ? "Saving..." : isEdit ? "Update Member Profile" : "Save Member (સભ્ય સાચવો)"}
         </button>
       </div>
     </form>

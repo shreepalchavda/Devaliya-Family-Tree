@@ -1757,6 +1757,120 @@ a {
   to { transform: rotate(360deg); }
 }
 
+/* Inline Members Manager in Add Kutumb */
+.members-inline-card {
+  border: 1px solid #bfdbfe;
+  background-color: #fbfdff;
+}
+
+.inline-members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.inline-member-badge-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.9rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.inline-mem-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.inline-mem-num {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.inline-mem-name {
+  font-size: 0.92rem;
+  color: var(--text-main);
+}
+
+.inline-mem-meta {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.btn-remove-inline {
+  background: none;
+  border: none;
+  color: var(--danger-color);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-remove-inline:hover {
+  background-color: var(--danger-bg);
+}
+
+.inline-member-form-box {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-top: 0.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.inline-form-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.inline-form-top h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.inline-add-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+
+.add-another-member-row {
+  margin-top: 0.5rem;
+}
+
+.add-member-prompt-btn {
+  border: 1px dashed var(--accent-border);
+  background-color: var(--accent-soft);
+  color: var(--accent-color);
+  font-weight: 600;
+  padding: 0.75rem;
+}
+
+.add-member-prompt-btn:hover {
+  background-color: #dbeafe;
+}
+
 /* Responsive adjustments */
 @media (max-width: 640px) {
   .hero-section {

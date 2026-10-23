@@ -38,16 +38,25 @@ export function AddMemberPage() {
     }
   }, [familyId]);
 
-  const handleSubmit = async (memberData) => {
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const handleSubmit = async (memberData, isAddAnother = false) => {
     setIsSubmitting(true);
     setError("");
+    setSuccessMessage("");
 
     try {
-      const created = await createMember(familyId, memberData);
-      setSuccess(true);
-      setTimeout(() => {
-        navigate(`/family/${familyId}`);
-      }, 800);
+      await createMember(familyId, memberData);
+
+      if (isAddAnother) {
+        setSuccessMessage(`Member "${memberData.fullName}" added successfully! You can add the next member below.`);
+        setIsSubmitting(false);
+      } else {
+        setSuccess(true);
+        setTimeout(() => {
+          navigate(`/family/${familyId}`);
+        }, 800);
+      }
     } catch (err) {
       console.error("Failed to add member:", err);
       setError(err.message || "Failed to add member. Please try again.");
@@ -86,6 +95,13 @@ export function AddMemberPage() {
         <div className="alert-box error">
           <AlertCircle size={18} />
           <span>{error}</span>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="alert-box success">
+          <CheckCircle2 size={18} />
+          <span>{successMessage}</span>
         </div>
       )}
 

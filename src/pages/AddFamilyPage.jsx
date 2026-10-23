@@ -10,12 +10,12 @@ export function AddFamilyPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (familyData, headMemberData) => {
+  const handleSubmit = async (familyData, headMemberData, additionalMembers = []) => {
     setIsSubmitting(true);
     setError("");
 
     try {
-      const createdFamily = await createFamilyWithHead(familyData, headMemberData);
+      const createdFamily = await createFamilyWithHead(familyData, headMemberData, additionalMembers);
       setSuccess(true);
       setTimeout(() => {
         navigate(`/family/${createdFamily.id || createdFamily.familyId}`);
