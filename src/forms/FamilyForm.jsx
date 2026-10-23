@@ -225,7 +225,32 @@ export function FamilyForm({
       isPublicAddress
     };
 
-    onSubmit(familyPayload, headPayload, additionalMembers);
+    // CRITICAL FIX: If the user typed a member in the form fields, automatically include it!
+    let finalMembers = [...additionalMembers];
+    if (memFullName.trim()) {
+      const relation = memRelation === "Other (અન્ય સંબંધ લખો)"
+        ? (memCustomRelation.trim() || "અન્ય")
+        : memRelation;
+
+      finalMembers.push({
+        tempId: "tmp-" + Date.now(),
+        fullName: memFullName.trim(),
+        relationshipToHead: relation,
+        dateOfBirth: memDob,
+        education: memEducation.trim(),
+        occupation: memOccupation.trim(),
+        workplaceAddress: memWorkplace.trim(),
+        mobileNumber: memMobile.trim(),
+        maternalSurname: memMaternalSurname.trim() || maternalSurname.trim(),
+        maternalVillage: memMaternalVillage.trim() || maternalVillage.trim(),
+        residentialAddress: memAddress.trim() || residentialAddress.trim(),
+        isPublicMobile: memPublicMobile,
+        isPublicAddress: memPublicAddress,
+        photoUrl: ""
+      });
+    }
+
+    onSubmit(familyPayload, headPayload, finalMembers);
   };
 
   const calculatedAge = calculateAge(dateOfBirth);
@@ -681,7 +706,7 @@ export function FamilyForm({
             ? "Saving Complete Record..." 
             : isEdit 
               ? "Update Kutumb" 
-              : `Save Kutumb with ${1 + additionalMembers.length} Members (કુટુંબ સાચવો)`}
+              : `Save Kutumb with ${1 + additionalMembers.length + (memFullName.trim() ? 1 : 0)} Members (કુટુંબ સાચવો)`}
         </button>
       </div>
     </form>

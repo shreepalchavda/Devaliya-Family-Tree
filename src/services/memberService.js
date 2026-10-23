@@ -48,7 +48,16 @@ export async function getMembersByFamilyId(familyId) {
 
   if (members.length === 0) {
     const allLocal = getLocalMembers();
-    members = allLocal.filter(m => m.familyId === familyId);
+    const allFamilies = getLocalFamilies();
+    const currentFamily = allFamilies.find(f => f.id === familyId || f.familyId === familyId);
+    
+    const validIds = new Set([
+      String(familyId).trim(),
+      currentFamily?.id ? String(currentFamily.id).trim() : null,
+      currentFamily?.familyId ? String(currentFamily.familyId).trim() : null
+    ].filter(Boolean));
+
+    members = allLocal.filter(m => validIds.has(String(m.familyId).trim()));
   }
 
   // Sort so that the family head is at the top
