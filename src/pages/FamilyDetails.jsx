@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { getFamilyById, deleteFamily } from "../services/familyService";
-import { getMembersByFamilyId, createMember } from "../services/memberService";
+import { getMembersByFamilyId } from "../services/memberService";
 import { MemberCard } from "../components/MemberCard";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { useAuth } from "../context/AuthContext";
@@ -14,37 +14,13 @@ import {
   Plus, 
   Edit3, 
   Trash2,
-  AlertCircle,
-  CheckCircle2,
-  X,
-  ExternalLink
+  AlertCircle 
 } from "lucide-react";
 
-const COMMON_RELATIONSHIPS = [
-  "પુત્ર (Son)",
-  "પુત્રી (Daughter)",
-  "પત્ની (Wife)",
-  "પતિ (Husband)",
-  "પિતા (Father)",
-  "માતા (Mother)",
-  "ભાઈ (Brother)",
-  "બહેન (Sister)",
-  "પુત્રવધૂ (Daughter-in-law)",
-  "જમાઈ (Son-in-law)",
-  "પૌત્ર (Grandson)",
-  "પૌત્રી (Granddaughter)",
-  "દોહિત્ર (Grandson - daughter's son)",
-  "દોહિત્રી (Granddaughter - daughter's daughter)",
-  "Other (અન્ય સંબંધ લખો)"
-];
-
-export function FamilyDetails({ isAdminView = false }) {
+export function FamilyDetails() {
   const { familyId } = useParams();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
-  
-  // Show admin controls ONLY if currently in Admin View
-  const showAdminControls = isAdminView && isAdmin;
 
   const [family, setFamily] = useState(null);
   const [members, setMembers] = useState([]);
@@ -52,19 +28,6 @@ export function FamilyDetails({ isAdminView = false }) {
   const [error, setError] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // Quick Add Member Modal States
-  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
-  const [quickMemName, setQuickMemName] = useState("");
-  const [quickMemRelation, setQuickMemRelation] = useState("પુત્ર (Son)");
-  const [quickMemCustomRelation, setQuickMemCustomRelation] = useState("");
-  const [quickMemDob, setQuickMemDob] = useState("");
-  const [quickMemEducation, setQuickMemEducation] = useState("");
-  const [quickMemOccupation, setQuickMemOccupation] = useState("");
-  const [quickMemMobile, setQuickMemMobile] = useState("");
-  const [quickMemSubmitting, setQuickMemSubmitting] = useState(false);
-  const [quickMemError, setQuickMemError] = useState("");
-  const [quickMemSuccess, setQuickMemSuccess] = useState("");
 
   const loadFamilyData = async () => {
     setLoading(true);
@@ -108,71 +71,6 @@ export function FamilyDetails({ isAdminView = false }) {
     }
   };
 
-  // Quick Add Member Handler
-  const handleQuickAddMember = async (e, addAnother = false) => {
-    if (e && e.preventDefault) e.preventDefault();
-    if (!quickMemName.trim()) {
-      setQuickMemError("Please enter member full name (સભ્યનું પૂરું નામ લખો).");
-      return;
-    }
-
-    setQuickMemSubmitting(true);
-    setQuickMemError("");
-    setQuickMemSuccess("");
-
-    const relation = quickMemRelation === "Other (અન્ય સંબંધ લખો)"
-      ? (quickMemCustomRelation.trim() || "અન્ય")
-      : quickMemRelation;
-
-    const payload = {
-      fullName: quickMemName.trim(),
-      relationshipToHead: relation,
-      dateOfBirth: quickMemDob,
-      education: quickMemEducation.trim(),
-      occupation: quickMemOccupation.trim(),
-      mobileNumber: quickMemMobile.trim(),
-      workplaceAddress: "",
-      maternalSurname: family?.maternalSurname || "",
-      maternalVillage: family?.originalVillage || "",
-      residentialAddress: family?.residentialAddress || "",
-      photoUrl: "",
-      isPublicMobile: true,
-      isPublicAddress: true
-    };
-
-    try {
-      const targetFamId = family.id || family.familyId || familyId;
-      const created = await createMember(targetFamId, payload);
-      
-      // Update UI immediately
-      setMembers(prev => [...prev, created]);
-      setFamily(prev => ({
-        ...prev,
-        memberCount: (prev.memberCount || 0) + 1
-      }));
-
-      // Reset fields
-      setQuickMemName("");
-      setQuickMemRelation("પુત્ર (Son)");
-      setQuickMemCustomRelation("");
-      setQuickMemDob("");
-      setQuickMemEducation("");
-      setQuickMemOccupation("");
-      setQuickMemMobile("");
-
-      if (addAnother) {
-        setQuickMemSuccess(`"${created.fullName}" successfully added! You can add another below.`);
-      } else {
-        setIsAddMemberModalOpen(false);
-      }
-    } catch (err) {
-      console.error("Failed to add member:", err);
-      setQuickMemError(err.message || "Failed to add member.");
-    } finally {
-      setQuickMemSubmitting(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="page-container">
@@ -200,29 +98,30 @@ export function FamilyDetails({ isAdminView = false }) {
     );
   }
 
+  const targetFamilyId = family.id || family.familyId || familyId;
+
   return (
     <main className="page-container">
       {/* Top Navigation */}
       <div className="page-top-nav">
-        <Link to={showAdminControls ? "/admin/families" : "/"} className="back-link">
+        <Link to="/" className="back-link">
           <ArrowLeft size={18} />
-          <span>{showAdminControls ? "Back to Manage Families" : "Back to All Families"}</span>
+          <span>Back to All Families</span>
         </Link>
 
-        {showAdminControls && (
+        {isAdmin && (
           <div className="admin-actions-bar">
-            <button
-              onClick={() => {
-                setQuickMemError("");
-                setQuickMemSuccess("");
-                setIsAddMemberModalOpen(true);
-              }}
+            <Link 
+              to={`/admin/families/${targetFamilyId}/members/new`} 
               className="btn btn-primary btn-sm"
             >
               <Plus size={16} />
               <span>Add Member (સભ્ય ઉમેરો)</span>
-            </button>
-            <Link to={`/admin/families/${familyId}/edit`} className="btn btn-secondary btn-sm">
+            </Link>
+            <Link 
+              to={`/admin/families/${targetFamilyId}/edit`} 
+              className="btn btn-secondary btn-sm"
+            >
               <Edit3 size={16} />
               <span>Edit Family</span>
             </Link>
@@ -280,18 +179,14 @@ export function FamilyDetails({ isAdminView = false }) {
             <h2>Family Members (કુટુંબના સભ્યોની યાદી)</h2>
             <p>Including the family head and all associated members</p>
           </div>
-          {showAdminControls && (
-            <button
-              onClick={() => {
-                setQuickMemError("");
-                setQuickMemSuccess("");
-                setIsAddMemberModalOpen(true);
-              }}
+          {isAdmin && (
+            <Link 
+              to={`/admin/families/${targetFamilyId}/members/new`} 
               className="btn btn-primary btn-sm"
             >
               <Plus size={16} />
               <span>Add Member (સભ્ય ઉમેરો)</span>
-            </button>
+            </Link>
           )}
         </div>
 
@@ -308,174 +203,6 @@ export function FamilyDetails({ isAdminView = false }) {
           </div>
         )}
       </section>
-
-      {/* QUICK ADD MEMBER MODAL */}
-      {isAddMemberModalOpen && (
-        <div className="modal-backdrop">
-          <div className="modal-dialog" style={{ maxWidth: '580px' }}>
-            <div className="modal-header">
-              <div className="modal-title-row">
-                <Users size={20} className="meta-icon" />
-                <h3>Add Member to {family.headFullName}</h3>
-              </div>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => setIsAddMemberModalOpen(false)}
-                disabled={quickMemSubmitting}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={(e) => handleQuickAddMember(e, false)}>
-              <div className="modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
-                {quickMemError && (
-                  <div className="alert-box error" style={{ padding: '0.6rem', marginBottom: '1rem' }}>
-                    <AlertCircle size={16} />
-                    <span>{quickMemError}</span>
-                  </div>
-                )}
-
-                {quickMemSuccess && (
-                  <div className="alert-box success" style={{ padding: '0.6rem', marginBottom: '1rem' }}>
-                    <CheckCircle2 size={16} />
-                    <span>{quickMemSuccess}</span>
-                  </div>
-                )}
-
-                <div className="form-field-group">
-                  <label className="form-label">
-                    <span>Member Full Name (સભ્યનું પૂરું નામ)</span>
-                    <span className="required-star">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={quickMemName}
-                    onChange={(e) => setQuickMemName(e.target.value)}
-                    placeholder="e.g. અક્ષય પટેલ (Akshay Patel)"
-                    autoFocus
-                    required
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-field-group">
-                    <label className="form-label">Relationship (સંબંધ)</label>
-                    <select
-                      className="form-control"
-                      value={quickMemRelation}
-                      onChange={(e) => setQuickMemRelation(e.target.value)}
-                    >
-                      {COMMON_RELATIONSHIPS.map((rel) => (
-                        <option key={rel} value={rel}>{rel}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {quickMemRelation === "Other (અન્ય સંબંધ લખો)" && (
-                    <div className="form-field-group">
-                      <label className="form-label">Specify (વિગતવાર લખો)</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={quickMemCustomRelation}
-                        onChange={(e) => setQuickMemCustomRelation(e.target.value)}
-                        placeholder="e.g. ભાણેજ / સાળો"
-                      />
-                    </div>
-                  )}
-
-                  <div className="form-field-group">
-                    <label className="form-label">Date of Birth (જન્મ તારીખ)</label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      value={quickMemDob}
-                      onChange={(e) => setQuickMemDob(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-field-group">
-                    <label className="form-label">Education (અભ્યાસ)</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={quickMemEducation}
-                      onChange={(e) => setQuickMemEducation(e.target.value)}
-                      placeholder="e.g. B.Tech / M.Sc. / Standard 10"
-                    />
-                  </div>
-
-                  <div className="form-field-group">
-                    <label className="form-label">Occupation (વ્યવસાય / નોકરી)</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={quickMemOccupation}
-                      onChange={(e) => setQuickMemOccupation(e.target.value)}
-                      placeholder="e.g. Software Engineer / વેપાર"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-field-group">
-                  <label className="form-label">Mobile Number (મોબાઈલ નંબર)</label>
-                  <input
-                    type="tel"
-                    className="form-control"
-                    value={quickMemMobile}
-                    onChange={(e) => setQuickMemMobile(e.target.value)}
-                    placeholder="+91 98765 43210"
-                  />
-                </div>
-
-                <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
-                  <Link
-                    to={`/admin/families/${familyId}/members/new`}
-                    style={{ fontSize: '0.8rem', color: 'var(--accent-color)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <span>Open full photo & address form</span>
-                    <ExternalLink size={12} />
-                  </Link>
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setIsAddMemberModalOpen(false)}
-                  disabled={quickMemSubmitting}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={(e) => handleQuickAddMember(e, true)}
-                  disabled={quickMemSubmitting}
-                >
-                  <Plus size={15} />
-                  <span>Save & Add Another</span>
-                </button>
-
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={quickMemSubmitting}
-                >
-                  {quickMemSubmitting ? "Saving..." : "Save Member (સભ્ય સાચવો)"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal

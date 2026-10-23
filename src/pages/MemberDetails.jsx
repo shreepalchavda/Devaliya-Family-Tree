@@ -24,11 +24,10 @@ import {
   AlertCircle 
 } from "lucide-react";
 
-export function MemberDetails({ isAdminView = false }) {
+export function MemberDetails() {
   const { memberId } = useParams();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
-  const showAdminControls = isAdminView && isAdmin;
 
   const [member, setMember] = useState(null);
   const [family, setFamily] = useState(null);
@@ -136,7 +135,7 @@ export function MemberDetails({ isAdminView = false }) {
           </Link>
         )}
 
-        {showAdminControls && (
+        {isAdmin && (
           <div className="admin-actions-bar">
             <Link to={`/admin/members/${memberId}/edit`} className="btn btn-secondary btn-sm">
               <Edit3 size={16} />

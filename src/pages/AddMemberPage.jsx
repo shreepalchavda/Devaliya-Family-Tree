@@ -46,7 +46,8 @@ export function AddMemberPage() {
     setSuccessMessage("");
 
     try {
-      await createMember(familyId, memberData);
+      const targetFamId = family?.id || family?.familyId || familyId;
+      await createMember(targetFamId, memberData);
 
       if (isAddAnother) {
         setSuccessMessage(`Member "${memberData.fullName}" added successfully! You can add the next member below.`);
@@ -54,7 +55,7 @@ export function AddMemberPage() {
       } else {
         setSuccess(true);
         setTimeout(() => {
-          navigate(`/family/${familyId}`);
+          navigate(`/family/${targetFamId}`);
         }, 800);
       }
     } catch (err) {

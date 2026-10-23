@@ -174,7 +174,7 @@ export function ManageMembers() {
                           )}
                         </div>
                         <div>
-                          <Link to={`/admin/members/${memId}`} className="table-main-title hover-link">
+                          <Link to={`/member/${memId}`} className="table-main-title hover-link">
                             {mem.fullName}
                           </Link>
                           {mem.mobileNumber && (
@@ -190,7 +190,7 @@ export function ManageMembers() {
                     </td>
                     <td>
                       {fam ? (
-                        <Link to={`/admin/families/${fam.id || fam.familyId}`} className="hover-link">
+                        <Link to={`/family/${fam.id || fam.familyId}`} className="hover-link">
                           {fam.headFullName}
                         </Link>
                       ) : (
@@ -211,12 +211,12 @@ export function ManageMembers() {
                     <td className="text-right">
                       <div className="action-buttons-group">
                         <Link
-                          to={`/admin/members/${memId}`}
+                          to={`/member/${memId}`}
                           className="btn btn-secondary btn-xs"
-                          title="View Admin Profile"
+                          title="View Profile"
                         >
                           <ExternalLink size={13} />
-                          <span>Manage</span>
+                          <span>View</span>
                         </Link>
                         <Link
                           to={`/admin/members/${memId}/edit`}

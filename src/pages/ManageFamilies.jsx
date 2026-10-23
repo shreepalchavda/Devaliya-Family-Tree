@@ -120,7 +120,7 @@ export function ManageFamilies() {
                   <tr key={famId}>
                     <td>
                       <div className="table-main-title">
-                        <Link to={`/admin/families/${famId}`} className="hover-link">
+                        <Link to={`/family/${famId}`} className="hover-link">
                           {fam.headFullName}
                         </Link>
                       </div>
@@ -139,12 +139,12 @@ export function ManageFamilies() {
                     <td className="text-right">
                       <div className="action-buttons-group">
                         <Link
-                          to={`/admin/families/${famId}`}
+                          to={`/family/${famId}`}
                           className="btn btn-secondary btn-xs"
-                          title="Open Admin Family View"
+                          title="Open Family View"
                         >
                           <ExternalLink size={13} />
-                          <span>Manage</span>
+                          <span>View</span>
                         </Link>
                         <Link
                           to={`/admin/families/${famId}/members/new`}
