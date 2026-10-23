@@ -25,7 +25,7 @@ export function AdminDashboard() {
       try {
         const fams = await getAllFamilies();
         const totalF = fams.length;
-        const totalM = fams.reduce((acc, f) => acc + (f.memberCount || 1), 0);
+        const totalM = fams.reduce((acc, f) => acc + (f.memberCount || 0), 0);
         setStats({ totalFamilies: totalF, totalMembers: totalM });
         setRecentFamilies(fams.slice(0, 5));
       } catch (err) {

@@ -23,9 +23,9 @@ export function Home() {
         const fams = await getAllFamilies();
         setFamilies(fams);
 
-        // Compute total members
+        // Compute total members accurately
         const totalF = fams.length;
-        const totalM = fams.reduce((acc, f) => acc + (f.memberCount || 1), 0);
+        const totalM = fams.reduce((acc, f) => acc + (f.memberCount || 0), 0);
         setStats({ totalFamilies: totalF, totalMembers: totalM });
       } catch (err) {
         console.error("Error loading families:", err);

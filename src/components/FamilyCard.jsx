@@ -12,7 +12,7 @@ export function FamilyCard({ family }) {
           <span className="badge-label">Kutumb / Family</span>
           <span className="badge-count">
             <Users size={14} />
-            {family.memberCount || 1} {family.memberCount === 1 ? 'Member' : 'Members'}
+            {family.memberCount ?? 0} {family.memberCount === 1 ? 'Member' : 'Members'}
           </span>
         </div>
         <h3 className="family-head-name">{family.headFullName}</h3>
