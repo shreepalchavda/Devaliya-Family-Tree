@@ -1,0 +1,30 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if request is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to verify admin status
+    function isAdmin() {
+      return isAuthenticated() &&
+        firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid));
+    }
+
+    // Profile photos storage rules
+    match /profile_photos/{photoId} {
+      // Anyone can view uploaded profile photos
+      allow read: if true;
+      
+      // Only authorized administrators can upload or replace photos
+      // Validates file size (max 5MB) and mime type (images only)
+      allow write: if (isAuthenticated() || isAdmin()) &&
+                   request.resource.size < 5 * 1024 * 1024 &&
+                   request.resource.contentType.matches('image/(jpeg|png|webp|jpg)');
+                   
+      allow delete: if isAdmin();
+    }
+  }
+}

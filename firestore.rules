@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if request is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to verify admin permissions via 'admins' collection
+    function isAdmin() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Admins Collection
+    // Only existing admins can read/write administrator credentials
+    match /admins/{adminId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Families Collection
+    match /families/{familyId} {
+      // Public visitors can read families that are public
+      allow read: if resource.data.isPublic == true || isAdmin();
+      
+      // Only authorized administrators can create, update, or delete families
+      allow create: if isAdmin() && 
+                    request.resource.data.headFullName is string &&
+                    request.resource.data.originalVillage is string &&
+                    request.resource.data.matajiMadhSthal is string;
+                    
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Members Collection
+    match /members/{memberId} {
+      // Public visitors can read members that are public
+      allow read: if resource.data.isPublic == true || isAdmin();
+      
+      // Only authorized administrators can create, update, or delete members
+      allow create: if isAdmin() && 
+                    request.resource.data.fullName is string &&
+                    request.resource.data.familyId is string;
+                    
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}
