@@ -1,49 +1,87 @@
-import { initialFamilies, initialMembers } from "../data/initialData";
-
 const FAMILIES_STORAGE_KEY = "family_directory_families";
 const MEMBERS_STORAGE_KEY = "family_directory_members";
-const CLEAN_VERSION_KEY = "family_directory_clean_v1";
 
-// Automatically wipe all old sample data from localStorage on first run
-if (typeof window !== "undefined" && localStorage.getItem(CLEAN_VERSION_KEY) !== "true") {
-  localStorage.setItem(FAMILIES_STORAGE_KEY, JSON.stringify([]));
-  localStorage.setItem(MEMBERS_STORAGE_KEY, JSON.stringify([]));
-  localStorage.setItem(CLEAN_VERSION_KEY, "true");
-}
+let pushTimeout = null;
 
-export function getLocalMembers() {
-  const data = localStorage.getItem(MEMBERS_STORAGE_KEY);
-  if (!data) {
-    localStorage.setItem(MEMBERS_STORAGE_KEY, JSON.stringify([]));
-    return [];
-  }
+function getLocalFamiliesRaw() {
+  if (typeof window === "undefined") return [];
+  const data = localStorage.getItem(FAMILIES_STORAGE_KEY);
   try {
-    return JSON.parse(data);
+    return data ? JSON.parse(data) : [];
   } catch {
     return [];
   }
 }
 
+function getLocalMembersRaw() {
+  if (typeof window === "undefined") return [];
+  const data = localStorage.getItem(MEMBERS_STORAGE_KEY);
+  try {
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function syncWithServer() {
+  if (typeof window === "undefined") return;
+  try {
+    const res = await fetch("/api/data");
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data?.families)) {
+        localStorage.setItem(FAMILIES_STORAGE_KEY, JSON.stringify(data.families));
+      }
+      if (Array.isArray(data?.members)) {
+        localStorage.setItem(MEMBERS_STORAGE_KEY, JSON.stringify(data.members));
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to sync with server:", err);
+  }
+}
+
+export async function pushToServer(overrideData = null) {
+  if (typeof window === "undefined") return;
+  try {
+    const families = overrideData?.families !== undefined ? overrideData.families : getLocalFamiliesRaw();
+    const members = overrideData?.members !== undefined ? overrideData.members : getLocalMembersRaw();
+    await fetch("/api/data", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ families, members })
+    });
+  } catch (err) {
+    console.warn("Failed to push data to server:", err);
+  }
+}
+
+function schedulePushToServer() {
+  if (pushTimeout) clearTimeout(pushTimeout);
+  pushTimeout = setTimeout(() => {
+    pushToServer();
+  }, 100);
+}
+
+// Initial sync on module load in browser
+if (typeof window !== "undefined") {
+  syncWithServer();
+}
+
+export function getLocalMembers() {
+  return getLocalMembersRaw();
+}
+
 export function saveLocalMembers(members) {
-  localStorage.setItem(MEMBERS_STORAGE_KEY, JSON.stringify(members || []));
+  const list = members || [];
+  localStorage.setItem(MEMBERS_STORAGE_KEY, JSON.stringify(list));
+  schedulePushToServer();
 }
 
 export function getLocalFamilies() {
-  const data = localStorage.getItem(FAMILIES_STORAGE_KEY);
-  let families = [];
-  if (!data) {
-    localStorage.setItem(FAMILIES_STORAGE_KEY, JSON.stringify([]));
-    return [];
-  } else {
-    try {
-      families = JSON.parse(data);
-    } catch {
-      families = [];
-    }
-  }
+  const families = getLocalFamiliesRaw();
+  const allMembers = getLocalMembersRaw();
 
-  // Calculate live, accurate member counts based on actual members in storage
-  const allMembers = getLocalMembers();
   return families.map(f => {
     const fId = f.id || f.familyId;
     const realCount = allMembers.filter(m => 
@@ -60,12 +98,33 @@ export function getLocalFamilies() {
 }
 
 export function saveLocalFamilies(families) {
-  localStorage.setItem(FAMILIES_STORAGE_KEY, JSON.stringify(families || []));
+  const list = families || [];
+  localStorage.setItem(FAMILIES_STORAGE_KEY, JSON.stringify(list));
+  schedulePushToServer();
+}
+
+export async function saveLocalAll(families, members) {
+  if (pushTimeout) clearTimeout(pushTimeout);
+  const fList = families !== undefined ? (families || []) : getLocalFamiliesRaw();
+  const mList = members !== undefined ? (members || []) : getLocalMembersRaw();
+  localStorage.setItem(FAMILIES_STORAGE_KEY, JSON.stringify(fList));
+  localStorage.setItem(MEMBERS_STORAGE_KEY, JSON.stringify(mList));
+  await pushToServer({ families: fList, members: mList });
+}
+
+export async function fetchLiveLocalData() {
+  await syncWithServer();
+  return {
+    families: getLocalFamilies(),
+    members: getLocalMembers()
+  };
 }
 
 export function clearAllLocalData() {
+  if (pushTimeout) clearTimeout(pushTimeout);
   localStorage.setItem(FAMILIES_STORAGE_KEY, JSON.stringify([]));
   localStorage.setItem(MEMBERS_STORAGE_KEY, JSON.stringify([]));
+  pushToServer({ families: [], members: [] });
 }
 
 export function resetLocalStore() {

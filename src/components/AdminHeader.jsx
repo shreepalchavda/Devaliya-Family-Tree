@@ -25,7 +25,6 @@ export function AdminHeader() {
           </div>
           <div className="brand-text">
             <span className="brand-title">Admin Management Portal</span>
-            <span className="brand-sub">કુટુંબ ડિરેક્ટરી એડમિન પેનલ</span>
           </div>
         </Link>
 

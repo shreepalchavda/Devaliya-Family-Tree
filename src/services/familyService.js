@@ -16,8 +16,11 @@ import {
   getLocalFamilies, 
   saveLocalFamilies, 
   getLocalMembers, 
-  saveLocalMembers 
+  saveLocalMembers,
+  saveLocalAll,
+  fetchLiveLocalData 
 } from "./localStore";
+import { sanitizeText, sanitizePhone, sanitizeDate } from "../utils/sanitize";
 
 const FAMILIES_COLLECTION = "families";
 const MEMBERS_COLLECTION = "members";
@@ -40,6 +43,7 @@ export async function getAllFamilies() {
     }
   }
 
+  await fetchLiveLocalData();
   return getLocalFamilies();
 }
 
@@ -54,11 +58,13 @@ export async function getFamilyById(familyId) {
       if (docSnap.exists()) {
         return { id: docSnap.id, ...docSnap.data() };
       }
+      return null;
     } catch (err) {
       console.warn("Firestore getFamilyById error, fallback to local store:", err);
     }
   }
 
+  await fetchLiveLocalData();
   const families = getLocalFamilies();
   return families.find(f => f.id === familyId || f.familyId === familyId) || null;
 }
@@ -73,6 +79,11 @@ export async function getFamilyById(familyId) {
 export async function createFamilyWithHead(familyData, headMemberData = {}, additionalMembers = []) {
   const now = new Date().toISOString();
   const totalCount = 1 + (additionalMembers ? additionalMembers.length : 0);
+
+  // Sanitized family data
+  const cleanHeadName = sanitizeText(familyData.headFullName, 100);
+  const cleanVillage = sanitizeText(familyData.originalVillage, 100);
+  const cleanMadhSthal = sanitizeText(familyData.matajiMadhSthal, 100);
 
   if (isFirebaseConfigured && db) {
     try {
@@ -90,17 +101,17 @@ export async function createFamilyWithHead(familyData, headMemberData = {}, addi
       const headMemberPayload = {
         memberId: headMemberId,
         familyId: familyId,
-        fullName: familyData.headFullName,
+        fullName: cleanHeadName,
         relationshipToHead: "પોતે (કુટુંબના વડા - Family Head)",
-        dateOfBirth: headMemberData.dateOfBirth || "",
-        education: headMemberData.education || "",
-        occupation: headMemberData.occupation || "",
-        workplaceAddress: headMemberData.workplaceAddress || "",
-        mobileNumber: headMemberData.mobileNumber || "",
-        maternalSurname: headMemberData.maternalSurname || "",
-        maternalVillage: headMemberData.maternalVillage || "",
-        residentialAddress: headMemberData.residentialAddress || "",
-        photoUrl: headMemberData.photoUrl || "",
+        dateOfBirth: sanitizeDate(headMemberData.dateOfBirth),
+        education: sanitizeText(headMemberData.education, 100),
+        occupation: sanitizeText(headMemberData.occupation, 100),
+        workplaceAddress: sanitizeText(headMemberData.workplaceAddress, 250),
+        mobileNumber: sanitizePhone(headMemberData.mobileNumber),
+        maternalSurname: sanitizeText(headMemberData.maternalSurname, 100),
+        maternalVillage: sanitizeText(headMemberData.maternalVillage, 100),
+        residentialAddress: sanitizeText(headMemberData.residentialAddress, 250),
+        photoUrl: "",
         isPublicMobile: headMemberData.isPublicMobile !== false,
         isPublicAddress: headMemberData.isPublicAddress !== false,
         isPublic: true,
@@ -112,9 +123,9 @@ export async function createFamilyWithHead(familyData, headMemberData = {}, addi
       const familyPayload = {
         familyId: familyId,
         headMemberId: headMemberId,
-        headFullName: familyData.headFullName,
-        originalVillage: familyData.originalVillage,
-        matajiMadhSthal: familyData.matajiMadhSthal,
+        headFullName: cleanHeadName,
+        originalVillage: cleanVillage,
+        matajiMadhSthal: cleanMadhSthal,
         memberCount: totalCount,
         isPublic: true,
         createdAt: serverTimestamp(),
@@ -130,9 +141,21 @@ export async function createFamilyWithHead(familyData, headMemberData = {}, addi
           const extraMemberRef = doc(collection(db, MEMBERS_COLLECTION));
           const extraId = extraMemberRef.id;
           const extraPayload = {
-            ...extraMem,
             memberId: extraId,
             familyId: familyId,
+            fullName: sanitizeText(extraMem.fullName, 100),
+            relationshipToHead: sanitizeText(extraMem.relationshipToHead, 100),
+            dateOfBirth: sanitizeDate(extraMem.dateOfBirth),
+            education: sanitizeText(extraMem.education, 100),
+            occupation: sanitizeText(extraMem.occupation, 100),
+            workplaceAddress: sanitizeText(extraMem.workplaceAddress, 250),
+            mobileNumber: sanitizePhone(extraMem.mobileNumber),
+            maternalSurname: sanitizeText(extraMem.maternalSurname, 100),
+            maternalVillage: sanitizeText(extraMem.maternalVillage, 100),
+            residentialAddress: sanitizeText(extraMem.residentialAddress, 250),
+            photoUrl: "",
+            isPublicMobile: extraMem.isPublicMobile !== false,
+            isPublicAddress: extraMem.isPublicAddress !== false,
             isPublic: true,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
@@ -149,6 +172,7 @@ export async function createFamilyWithHead(familyData, headMemberData = {}, addi
   }
 
   // Local storage mode
+  await fetchLiveLocalData();
   const families = getLocalFamilies();
   const members = getLocalMembers();
 
@@ -209,8 +233,7 @@ export async function createFamilyWithHead(familyData, headMemberData = {}, addi
     });
   }
 
-  saveLocalFamilies(families);
-  saveLocalMembers(members);
+  await saveLocalAll(families, members);
 
   return newFamily;
 }
@@ -221,30 +244,36 @@ export async function createFamilyWithHead(familyData, headMemberData = {}, addi
 export async function updateFamily(familyId, updateData) {
   const now = new Date().toISOString();
 
+  const cleanData = { ...updateData };
+  if (cleanData.headFullName) cleanData.headFullName = sanitizeText(cleanData.headFullName, 100);
+  if (cleanData.originalVillage) cleanData.originalVillage = sanitizeText(cleanData.originalVillage, 100);
+  if (cleanData.matajiMadhSthal) cleanData.matajiMadhSthal = sanitizeText(cleanData.matajiMadhSthal, 100);
+
   if (isFirebaseConfigured && db) {
     try {
       const familyRef = doc(db, FAMILIES_COLLECTION, familyId);
       const payload = {
-        ...updateData,
+        ...cleanData,
         updatedAt: serverTimestamp()
       };
       await updateDoc(familyRef, payload);
 
       // If head full name changed, update the head member document too
-      if (updateData.headFullName && updateData.headMemberId) {
-        const headMemberRef = doc(db, MEMBERS_COLLECTION, updateData.headMemberId);
+      if (cleanData.headFullName && cleanData.headMemberId) {
+        const headMemberRef = doc(db, MEMBERS_COLLECTION, cleanData.headMemberId);
         await updateDoc(headMemberRef, {
-          fullName: updateData.headFullName,
+          fullName: cleanData.headFullName,
           updatedAt: serverTimestamp()
         });
       }
 
-      return { id: familyId, ...updateData };
+      return { id: familyId, ...cleanData };
     } catch (err) {
       console.warn("Firestore updateFamily error, falling back to local store:", err);
     }
   }
 
+  await fetchLiveLocalData();
   const families = getLocalFamilies();
   const members = getLocalMembers();
 
@@ -254,25 +283,24 @@ export async function updateFamily(familyId, updateData) {
   const existing = families[index];
   const updatedFamily = {
     ...existing,
-    ...updateData,
+    ...cleanData,
     updatedAt: now
   };
   families[index] = updatedFamily;
-  saveLocalFamilies(families);
 
   // Synchronize head member's name if changed
-  if (updateData.headFullName && existing.headMemberId) {
+  if (cleanData.headFullName && existing.headMemberId) {
     const memberIndex = members.findIndex(m => m.id === existing.headMemberId || m.memberId === existing.headMemberId);
     if (memberIndex !== -1) {
       members[memberIndex] = {
         ...members[memberIndex],
-        fullName: updateData.headFullName,
+        fullName: cleanData.headFullName,
         updatedAt: now
       };
-      saveLocalMembers(members);
     }
   }
 
+  await saveLocalAll(families, members);
   return updatedFamily;
 }
 
@@ -306,14 +334,13 @@ export async function deleteFamily(familyId) {
   }
 
   // Local storage cascading delete
+  await fetchLiveLocalData();
   const families = getLocalFamilies();
   const members = getLocalMembers();
 
   const filteredFamilies = families.filter(f => f.id !== familyId && f.familyId !== familyId);
   const filteredMembers = members.filter(m => m.familyId !== familyId);
 
-  saveLocalFamilies(filteredFamilies);
-  saveLocalMembers(filteredMembers);
-
+  await saveLocalAll(filteredFamilies, filteredMembers);
   return true;
 }

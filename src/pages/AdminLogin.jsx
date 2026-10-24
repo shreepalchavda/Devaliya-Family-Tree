@@ -104,28 +104,24 @@ export function AdminLogin() {
           </button>
         </form>
 
-        {!isFirebaseConfigured && (
-          <div className="demo-credentials-banner">
-            <div className="demo-info-title">
-              <Info size={16} />
-              <span>Demo Mode Active</span>
-            </div>
-            <p>
-              Firebase environment variables are not yet set. You can log in using demo credentials:
-            </p>
-            <div className="demo-credentials-code">
-              <div><strong>Email:</strong> admin@family.org</div>
-              <div><strong>Password:</strong> admin123</div>
-            </div>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm btn-block"
-              onClick={handleDemoFill}
-            >
-              Fill Demo Credentials
-            </button>
+        <div className="demo-credentials-banner" style={{ marginTop: '1.25rem' }}>
+          <div className="demo-info-title">
+            <Info size={16} />
+            <span>Admin Login Credentials</span>
           </div>
-        )}
+          <div className="demo-credentials-code">
+            <div><strong>Email:</strong> admin@family.org</div>
+            <div><strong>Password:</strong> admin123</div>
+          </div>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm btn-block"
+            onClick={handleDemoFill}
+            style={{ marginTop: '0.75rem' }}
+          >
+            Auto-fill Credentials
+          </button>
+        </div>
 
         <div className="login-footer">
           <Link to="/" className="back-link">

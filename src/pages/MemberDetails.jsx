@@ -158,13 +158,9 @@ export function MemberDetails() {
         {/* Profile Header Header */}
         <div className="profile-hero-header">
           <div className="profile-photo-container">
-            {member.photoUrl ? (
-              <img src={member.photoUrl} alt={member.fullName} className="profile-img" />
-            ) : (
-              <div className="profile-img-fallback">
-                {isHead ? <Crown size={48} className="crown-icon" /> : <User size={48} />}
-              </div>
-            )}
+            <div className="profile-img-fallback">
+              {isHead ? <Crown size={44} className="crown-icon" /> : <User size={44} />}
+            </div>
           </div>
 
           <div className="profile-title-block">

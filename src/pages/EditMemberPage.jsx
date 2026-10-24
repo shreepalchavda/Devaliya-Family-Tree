@@ -85,9 +85,6 @@ export function EditMemberPage() {
 
       <div className="form-page-header">
         <h1 className="page-title">Edit Member Profile (સભ્ય વિગત સુધારો)</h1>
-        <p className="page-subtitle">
-          Updating records for <strong>{member?.fullName}</strong>
-        </p>
       </div>
 
       {error && (

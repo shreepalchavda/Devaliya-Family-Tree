@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FormField } from "../components/FormField";
-import { uploadMemberPhoto } from "../services/storageService";
 import { calculateAge } from "../utils/calculateAge";
 import { 
-  Upload, 
   CheckCircle2, 
   AlertCircle, 
   UserPlus, 
@@ -56,9 +54,6 @@ export function FamilyForm({
   const [maternalSurname, setMaternalSurname] = useState("");
   const [maternalVillage, setMaternalVillage] = useState("");
   const [residentialAddress, setResidentialAddress] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
-  const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState("");
   const [isPublicMobile, setIsPublicMobile] = useState(true);
   const [isPublicAddress, setIsPublicAddress] = useState(true);
 
@@ -84,7 +79,6 @@ export function FamilyForm({
 
   // Errors & UI state
   const [errors, setErrors] = useState({});
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     if (initialData) {
@@ -101,21 +95,11 @@ export function FamilyForm({
       setMaternalSurname(initialHeadData.maternalSurname || "");
       setMaternalVillage(initialHeadData.maternalVillage || "");
       setResidentialAddress(initialHeadData.residentialAddress || "");
-      setPhotoUrl(initialHeadData.photoUrl || "");
-      setPhotoPreview(initialHeadData.photoUrl || "");
       setIsPublicMobile(initialHeadData.isPublicMobile !== false);
       setIsPublicAddress(initialHeadData.isPublicAddress !== false);
       setShowHeadDetails(true);
     }
   }, [initialData, initialHeadData]);
-
-  const handlePhotoSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setPhotoFile(file);
-      setPhotoPreview(URL.createObjectURL(file));
-    }
-  };
 
   const validate = () => {
     const errs = {};
@@ -191,19 +175,6 @@ export function FamilyForm({
     e.preventDefault();
     if (!validate()) return;
 
-    let finalPhotoUrl = photoUrl;
-    if (photoFile) {
-      setUploadingPhoto(true);
-      try {
-        finalPhotoUrl = await uploadMemberPhoto(photoFile, 'head');
-      } catch (err) {
-        setErrors(prev => ({ ...prev, photo: err.message || "Failed to upload photo" }));
-        setUploadingPhoto(false);
-        return;
-      }
-      setUploadingPhoto(false);
-    }
-
     const familyPayload = {
       headFullName: headFullName.trim(),
       originalVillage: originalVillage.trim(),
@@ -220,7 +191,6 @@ export function FamilyForm({
       maternalSurname: maternalSurname.trim(),
       maternalVillage: maternalVillage.trim(),
       residentialAddress: residentialAddress.trim(),
-      photoUrl: finalPhotoUrl,
       isPublicMobile,
       isPublicAddress
     };
@@ -262,9 +232,6 @@ export function FamilyForm({
         <h3 className="form-section-title">
           {isEdit ? "Edit Kutumb (કુટુંબ સુધારો)" : "1. Family Head & Village (કુટુંબના વડા અને મૂળ વિગતો)"}
         </h3>
-        <p className="form-section-desc">
-          Enter the family head's name, original village, and Mataji Madh location.
-        </p>
 
         <FormField 
           label="Family Head's Full Name" 
@@ -323,9 +290,6 @@ export function FamilyForm({
           <div className="toggle-section-header">
             <div>
               <h3 className="form-section-title">2. Head's Personal Details (વડાની અંગત વિગતો - વૈકલ્પિક)</h3>
-              <p className="form-section-desc">
-                Fill in additional personal details now, or edit them anytime later.
-              </p>
             </div>
             <button
               type="button"
@@ -435,32 +399,6 @@ export function FamilyForm({
                 />
               </FormField>
 
-              <div className="form-row photo-upload-row">
-                <div className="photo-preview-container">
-                  {photoPreview ? (
-                    <img src={photoPreview} alt="Preview" className="photo-preview-img" />
-                  ) : (
-                    <div className="photo-placeholder-box">No Photo</div>
-                  )}
-                </div>
-
-                <div className="photo-input-group">
-                  <label className="btn btn-secondary file-upload-btn">
-                    <Upload size={16} />
-                    <span>Upload Head Photo</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoSelect}
-                      style={{ display: "none" }}
-                      disabled={isSubmitting || uploadingPhoto}
-                    />
-                  </label>
-                  <span className="file-info-text">PNG, JPG, WebP up to 5MB</span>
-                  {errors.photo && <span className="field-error-message">{errors.photo}</span>}
-                </div>
-              </div>
-
               <div className="privacy-checkboxes">
                 <label className="checkbox-label">
                   <input
@@ -492,9 +430,6 @@ export function FamilyForm({
               <h3 className="form-section-title">
                 3. Add Family Members (કુટુંબના સભ્યો ઉમેરો)
               </h3>
-              <p className="form-section-desc">
-                Add sons, daughters, spouse, or other relatives right here without leaving this page.
-              </p>
             </div>
             <span className="count-pill">
               {additionalMembers.length} Added
@@ -700,9 +635,9 @@ export function FamilyForm({
         <button
           type="submit"
           className="btn btn-primary btn-lg"
-          disabled={isSubmitting || uploadingPhoto}
+          disabled={isSubmitting}
         >
-          {isSubmitting || uploadingPhoto 
+          {isSubmitting 
             ? "Saving Complete Record..." 
             : isEdit 
               ? "Update Kutumb" 

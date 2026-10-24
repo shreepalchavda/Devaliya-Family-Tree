@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { Header } from "./components/Header";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Pages
 import { Home } from "./pages/Home";
@@ -19,7 +20,8 @@ import { EditMemberPage } from "./pages/EditMemberPage";
 
 export default function App() {
   return (
-    <AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
       <BrowserRouter>
         <div className="app-layout">
           <Header />
@@ -96,5 +98,6 @@ export default function App() {
         </div>
       </BrowserRouter>
     </AuthProvider>
+  </ErrorBoundary>
   );
 }

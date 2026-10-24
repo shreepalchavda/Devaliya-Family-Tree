@@ -11,7 +11,8 @@ import {
   ExternalLink, 
   Home, 
   MapPin, 
-  ArrowLeft 
+  ArrowLeft,
+  Sparkles 
 } from "lucide-react";
 
 export function ManageFamilies() {
@@ -35,6 +36,10 @@ export function ManageFamilies() {
 
   useEffect(() => {
     loadData();
+
+    const handleFocus = () => loadData();
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
   const handleDelete = async () => {
@@ -79,9 +84,6 @@ export function ManageFamilies() {
       <div className="manage-header-row">
         <div>
           <h1 className="page-title">Manage Families (કુટુંબ વ્યવસ્થાપન)</h1>
-          <p className="page-subtitle">
-            View, edit, and organize family units and their members
-          </p>
         </div>
 
         <div className="table-search-box">
@@ -102,82 +104,144 @@ export function ManageFamilies() {
           <p>Loading families...</p>
         </div>
       ) : filteredFamilies.length > 0 ? (
-        <div className="table-responsive">
-          <table className="standard-table">
-            <thead>
-              <tr>
-                <th>Family Head (કુટુંબના વડા)</th>
-                <th>Original Village (મૂળ ગામ)</th>
-                <th>Mataji Madh Sthal</th>
-                <th>Members</th>
-                <th className="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredFamilies.map((fam) => {
-                const famId = fam.id || fam.familyId;
-                return (
-                  <tr key={famId}>
-                    <td>
-                      <div className="table-main-title">
-                        <Link to={`/family/${famId}`} className="hover-link">
-                          {fam.headFullName}
-                        </Link>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="village-badge">
+        <>
+          {/* Desktop Table View */}
+          <div className="table-responsive desktop-table-view">
+            <table className="standard-table">
+              <thead>
+                <tr>
+                  <th>Family Head (કુટુંબના વડા)</th>
+                  <th>Original Village (મૂળ ગામ)</th>
+                  <th>Mataji Madh Sthal</th>
+                  <th>Members</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredFamilies.map((fam) => {
+                  const famId = fam.id || fam.familyId;
+                  return (
+                    <tr key={famId}>
+                      <td>
+                        <div className="table-main-title">
+                          <Link to={`/family/${famId}`} className="hover-link">
+                            {fam.headFullName}
+                          </Link>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="village-badge">
+                          <MapPin size={13} /> {fam.originalVillage}
+                        </span>
+                      </td>
+                      <td>{fam.matajiMadhSthal}</td>
+                      <td>
+                        <span className="count-pill small">
+                          <Users size={12} /> {fam.memberCount || 1}
+                        </span>
+                      </td>
+                      <td className="text-right">
+                        <div className="action-buttons-group">
+                          <Link
+                            to={`/family/${famId}`}
+                            className="btn btn-secondary btn-xs"
+                            title="Open Family View"
+                          >
+                            <ExternalLink size={13} />
+                            <span>View</span>
+                          </Link>
+                          <Link
+                            to={`/admin/families/${famId}/members/new`}
+                            className="btn btn-secondary btn-xs"
+                            title="Add Member"
+                          >
+                            <Plus size={13} />
+                            <span>+ Member</span>
+                          </Link>
+                          <Link
+                            to={`/admin/families/${famId}/edit`}
+                            className="btn btn-secondary btn-xs"
+                            title="Edit Family"
+                          >
+                            <Edit3 size={13} />
+                            <span>Edit</span>
+                          </Link>
+                          <button
+                            onClick={() => setFamilyToDelete(fam)}
+                            className="btn btn-danger-outline btn-xs"
+                            title="Delete Family"
+                          >
+                            <Trash2 size={13} />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards View (Clean, Spacious, Easy to Read) */}
+          <div className="mobile-family-cards-list">
+            {filteredFamilies.map((fam) => {
+              const famId = fam.id || fam.familyId;
+              return (
+                <div key={famId} className="mobile-admin-family-card">
+                  <div className="mobile-fam-top">
+                    <Link to={`/family/${famId}`} className="mobile-fam-name">
+                      {fam.headFullName}
+                    </Link>
+                    <span className="count-pill small">
+                      <Users size={12} /> {fam.memberCount || 1}
+                    </span>
+                  </div>
+
+                  <div className="mobile-fam-meta">
+                    {fam.originalVillage && (
+                      <span className="mobile-meta-tag">
                         <MapPin size={13} /> {fam.originalVillage}
                       </span>
-                    </td>
-                    <td>{fam.matajiMadhSthal}</td>
-                    <td>
-                      <span className="count-pill small">
-                        <Users size={12} /> {fam.memberCount || 1}
+                    )}
+                    {fam.matajiMadhSthal && (
+                      <span className="mobile-meta-tag">
+                        <Sparkles size={13} /> {fam.matajiMadhSthal}
                       </span>
-                    </td>
-                    <td className="text-right">
-                      <div className="action-buttons-group">
-                        <Link
-                          to={`/family/${famId}`}
-                          className="btn btn-secondary btn-xs"
-                          title="Open Family View"
-                        >
-                          <ExternalLink size={13} />
-                          <span>View</span>
-                        </Link>
-                        <Link
-                          to={`/admin/families/${famId}/members/new`}
-                          className="btn btn-secondary btn-xs"
-                          title="Add Member"
-                        >
-                          <Plus size={13} />
-                          <span>+ Member</span>
-                        </Link>
-                        <Link
-                          to={`/admin/families/${famId}/edit`}
-                          className="btn btn-secondary btn-xs"
-                          title="Edit Family"
-                        >
-                          <Edit3 size={13} />
-                          <span>Edit</span>
-                        </Link>
-                        <button
-                          onClick={() => setFamilyToDelete(fam)}
-                          className="btn btn-danger-outline btn-xs"
-                          title="Delete Family"
-                        >
-                          <Trash2 size={13} />
-                          <span>Delete</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    )}
+                  </div>
+
+                  <div className="mobile-fam-actions">
+                    <Link
+                      to={`/family/${famId}`}
+                      className="btn btn-secondary btn-xs"
+                    >
+                      <ExternalLink size={13} /> View
+                    </Link>
+                    <Link
+                      to={`/admin/families/${famId}/members/new`}
+                      className="btn btn-secondary btn-xs"
+                    >
+                      <Plus size={13} /> + Member
+                    </Link>
+                    <Link
+                      to={`/admin/families/${famId}/edit`}
+                      className="btn btn-secondary btn-xs"
+                    >
+                      <Edit3 size={13} /> Edit
+                    </Link>
+                    <button
+                      onClick={() => setFamilyToDelete(fam)}
+                      className="btn btn-danger-outline btn-xs"
+                    >
+                      <Trash2 size={13} /> Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       ) : (
         <div className="empty-state">
           <Home size={36} className="empty-icon" />

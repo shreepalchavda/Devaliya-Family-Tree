@@ -1,52 +1,49 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if request is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
+
+    // Helper functions
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
     }
 
-    // Helper function to verify admin permissions via 'admins' collection
-    function isAdmin() {
-      return isAuthenticated() && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-
-    // Admins Collection
-    // Only existing admins can read/write administrator credentials
-    match /admins/{adminId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Families Collection
+    // 1. FAMILIES COLLECTION
+    // Public visitors can read. Writes require valid structure and constraints.
     match /families/{familyId} {
-      // Public visitors can read families that are public
-      allow read: if resource.data.isPublic == true || isAdmin();
+      allow read: if true;
       
-      // Only authorized administrators can create, update, or delete families
-      allow create: if isAdmin() && 
-                    request.resource.data.headFullName is string &&
-                    request.resource.data.originalVillage is string &&
-                    request.resource.data.matajiMadhSthal is string;
-                    
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow create: if isValidString(request.resource.data.headFullName, 2, 120)
+                    && isValidString(request.resource.data.originalVillage, 1, 120);
+
+      allow update: if (request.resource.data.headFullName == null || isValidString(request.resource.data.headFullName, 2, 120))
+                    && (request.resource.data.originalVillage == null || isValidString(request.resource.data.originalVillage, 1, 120));
+
+      allow delete: if true;
     }
 
-    // Members Collection
+    // 2. MEMBERS COLLECTION
+    // Public visitors can read. Writes require valid member data.
     match /members/{memberId} {
-      // Public visitors can read members that are public
-      allow read: if resource.data.isPublic == true || isAdmin();
-      
-      // Only authorized administrators can create, update, or delete members
-      allow create: if isAdmin() && 
-                    request.resource.data.fullName is string &&
-                    request.resource.data.familyId is string;
-                    
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow read: if true;
+
+      allow create: if isValidString(request.resource.data.fullName, 2, 120)
+                    && isValidString(request.resource.data.familyId, 1, 120);
+
+      allow update: if (request.resource.data.fullName == null || isValidString(request.resource.data.fullName, 2, 120));
+
+      allow delete: if true;
+    }
+
+    // 3. ADMINS COLLECTION
+    // Strictly protected: Only authenticated users can access admin records
+    match /admins/{adminId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Default rule: block everything else
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

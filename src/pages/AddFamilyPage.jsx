@@ -38,9 +38,6 @@ export function AddFamilyPage() {
 
       <div className="form-page-header">
         <h1 className="page-title">Add Kutumb (નવું કુટુંબ ઉમેરો)</h1>
-        <p className="page-subtitle">
-          Register a new family unit and create the designated family head record
-        </p>
       </div>
 
       {error && (

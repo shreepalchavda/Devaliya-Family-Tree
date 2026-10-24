@@ -15,13 +15,9 @@ export function MemberCard({ member }) {
       aria-label={`View details of ${member.fullName}`}
     >
       <div className="member-avatar-box">
-        {member.photoUrl ? (
-          <img src={member.photoUrl} alt={member.fullName} className="member-avatar-img" />
-        ) : (
-          <div className="member-avatar-placeholder">
-            {isHead ? <Crown size={22} className="avatar-icon-head" /> : <User size={22} />}
-          </div>
-        )}
+        <div className="member-avatar-placeholder">
+          {isHead ? <Crown size={22} className="avatar-icon-head" /> : <User size={22} />}
+        </div>
       </div>
 
       <div className="member-info-content">

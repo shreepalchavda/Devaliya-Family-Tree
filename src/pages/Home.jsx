@@ -17,8 +17,10 @@ export function Home() {
   const [stats, setStats] = useState({ totalFamilies: 0, totalMembers: 0 });
 
   useEffect(() => {
+    let isInitial = true;
+
     async function loadData() {
-      setLoading(true);
+      if (isInitial) setLoading(true);
       try {
         const fams = await getAllFamilies();
         setFamilies(fams);
@@ -30,11 +32,36 @@ export function Home() {
       } catch (err) {
         console.error("Error loading families:", err);
       } finally {
-        setLoading(false);
+        if (isInitial) {
+          setLoading(false);
+          isInitial = false;
+        }
       }
     }
 
     loadData();
+
+    // Auto-refresh when tab is focused / becomes visible
+    const handleFocus = () => {
+      loadData();
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        loadData();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    // Continuous 3-second sync poll so cross-port changes reflect immediately
+    const interval = setInterval(loadData, 3000);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      clearInterval(interval);
+    };
   }, []);
 
   // Handle live search
@@ -66,9 +93,6 @@ export function Home() {
       {/* Search & Hero Section */}
       <section className="hero-section">
         <h1 className="main-title">Family Directory</h1>
-        <p className="main-subtitle">
-          સંપૂર્ણ કુટુંબ વિગતો અને સભ્યોની ડિરેક્ટરી • Browse families, ancestral villages & member profiles
-        </p>
 
         <SearchBar
           value={searchQuery}
@@ -117,11 +141,7 @@ export function Home() {
                       className="search-result-item"
                     >
                       <div className="search-result-avatar">
-                        {member.photoUrl ? (
-                          <img src={member.photoUrl} alt={member.fullName} />
-                        ) : (
-                          <User size={22} />
-                        )}
+                        <User size={22} />
                       </div>
 
                       <div className="search-result-info">

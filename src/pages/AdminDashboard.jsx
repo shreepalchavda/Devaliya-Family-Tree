@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getAllFamilies } from "../services/familyService";
 import { getLocalMembers } from "../services/localStore";
-import { isFirebaseConfigured } from "../services/firebase";
 import { 
   Users, 
   Home, 
@@ -11,7 +10,8 @@ import {
   UserPlus, 
   ChevronRight, 
   ShieldCheck, 
-  Database 
+  MapPin, 
+  Sparkles 
 } from "lucide-react";
 
 export function AdminDashboard() {
@@ -36,6 +36,10 @@ export function AdminDashboard() {
     }
 
     loadStats();
+
+    const handleFocus = () => loadStats();
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
   return (
@@ -43,14 +47,6 @@ export function AdminDashboard() {
       <div className="admin-dashboard-header">
         <div>
           <h1 className="admin-title">Admin Dashboard</h1>
-          <p className="admin-subtitle">
-            Manage family records, members, and directory permissions
-          </p>
-        </div>
-
-        <div className="db-status-pill">
-          <Database size={15} />
-          <span>{isFirebaseConfigured ? "Connected to Cloud Firestore" : "Running in Local Demo Storage"}</span>
         </div>
       </div>
 
@@ -58,31 +54,31 @@ export function AdminDashboard() {
       <div className="dashboard-metrics-grid">
         <div className="metric-card">
           <div className="metric-icon-box bg-blue">
-            <Home size={24} />
+            <Home size={22} />
           </div>
           <div className="metric-data">
             <span className="metric-number">{stats.totalFamilies}</span>
-            <span className="metric-label">Total Families (કુલ કુટુંબ)</span>
+            <span className="metric-label">Families (કુટુંબ)</span>
           </div>
         </div>
 
         <div className="metric-card">
           <div className="metric-icon-box bg-green">
-            <Users size={24} />
+            <Users size={22} />
           </div>
           <div className="metric-data">
             <span className="metric-number">{stats.totalMembers}</span>
-            <span className="metric-label">Total Members (કુલ સભ્યો)</span>
+            <span className="metric-label">Members (સભ્યો)</span>
           </div>
         </div>
 
         <div className="metric-card">
           <div className="metric-icon-box bg-purple">
-            <ShieldCheck size={24} />
+            <ShieldCheck size={22} />
           </div>
           <div className="metric-data">
             <span className="metric-number">Admin</span>
-            <span className="metric-label">Role: Full Control</span>
+            <span className="metric-label">Full Control</span>
           </div>
         </div>
       </div>
@@ -113,7 +109,7 @@ export function AdminDashboard() {
             <Users size={22} />
             <div className="action-card-text">
               <strong>Manage Members (બધા સભ્યો)</strong>
-              <span>Search, edit member profiles, and update photos</span>
+              <span>Search, view, and organize member profiles</span>
             </div>
             <ChevronRight size={18} className="action-arrow" />
           </Link>
@@ -135,48 +131,98 @@ export function AdminDashboard() {
             <p>Loading records...</p>
           </div>
         ) : recentFamilies.length > 0 ? (
-          <div className="table-responsive">
-            <table className="standard-table">
-              <thead>
-                <tr>
-                  <th>Family Head (કુટુંબના વડા)</th>
-                  <th>Original Village (મૂળ ગામ)</th>
-                  <th>Mataji Madh</th>
-                  <th>Members</th>
-                  <th className="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentFamilies.map((fam) => (
-                  <tr key={fam.id || fam.familyId}>
-                    <td>
-                      <strong>{fam.headFullName}</strong>
-                    </td>
-                    <td>{fam.originalVillage}</td>
-                    <td>{fam.matajiMadhSthal}</td>
-                    <td>
-                      <span className="count-pill small">{fam.memberCount || 1}</span>
-                    </td>
-                    <td className="text-right">
-                      <Link
-                        to={`/family/${fam.id || fam.familyId}`}
-                        className="btn btn-secondary btn-xs"
-                      >
-                        Open
-                      </Link>
-                      <Link
-                        to={`/admin/families/${fam.id || fam.familyId}/edit`}
-                        className="btn btn-secondary btn-xs"
-                        style={{ marginLeft: '6px' }}
-                      >
-                        Edit
-                      </Link>
-                    </td>
+          <>
+            {/* Desktop Table View */}
+            <div className="table-responsive desktop-table-view">
+              <table className="standard-table">
+                <thead>
+                  <tr>
+                    <th>Family Head (કુટુંબના વડા)</th>
+                    <th>Original Village (મૂળ ગામ)</th>
+                    <th>Mataji Madh</th>
+                    <th>Members</th>
+                    <th className="text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {recentFamilies.map((fam) => (
+                    <tr key={fam.id || fam.familyId}>
+                      <td>
+                        <strong>{fam.headFullName}</strong>
+                      </td>
+                      <td>{fam.originalVillage}</td>
+                      <td>{fam.matajiMadhSthal}</td>
+                      <td>
+                        <span className="count-pill small">{fam.memberCount || 1}</span>
+                      </td>
+                      <td className="text-right">
+                        <Link
+                          to={`/family/${fam.id || fam.familyId}`}
+                          className="btn btn-secondary btn-xs"
+                        >
+                          Open
+                        </Link>
+                        <Link
+                          to={`/admin/families/${fam.id || fam.familyId}/edit`}
+                          className="btn btn-secondary btn-xs"
+                          style={{ marginLeft: '6px' }}
+                        >
+                          Edit
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards View (Clean, Spacious, Easy to Read) */}
+            <div className="mobile-family-cards-list">
+              {recentFamilies.map((fam) => {
+                const famId = fam.id || fam.familyId;
+                return (
+                  <div key={famId} className="mobile-admin-family-card">
+                    <div className="mobile-fam-top">
+                      <Link to={`/family/${famId}`} className="mobile-fam-name">
+                        {fam.headFullName}
+                      </Link>
+                      <span className="count-pill small">
+                        <Users size={12} /> {fam.memberCount || 1}
+                      </span>
+                    </div>
+
+                    <div className="mobile-fam-meta">
+                      {fam.originalVillage && (
+                        <span className="mobile-meta-tag">
+                          <MapPin size={13} /> {fam.originalVillage}
+                        </span>
+                      )}
+                      {fam.matajiMadhSthal && (
+                        <span className="mobile-meta-tag">
+                          <Sparkles size={13} /> {fam.matajiMadhSthal}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mobile-fam-actions">
+                      <Link
+                        to={`/family/${famId}`}
+                        className="btn btn-secondary btn-xs"
+                      >
+                        Open Details
+                      </Link>
+                      <Link
+                        to={`/admin/families/${famId}/edit`}
+                        className="btn btn-secondary btn-xs"
+                      >
+                        Edit Family
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         ) : (
           <div className="empty-state">
             <p>No family records yet.</p>

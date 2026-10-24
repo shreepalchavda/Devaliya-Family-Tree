@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { AdminHeader } from "./components/AdminHeader";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Admin Pages
 import { AdminLogin } from "./pages/AdminLogin";
@@ -18,8 +19,9 @@ import { MemberDetails } from "./pages/MemberDetails";
 
 export default function AppAdmin() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
         <div className="app-layout admin-layout">
           <AdminHeader />
           <div className="main-content-area">
@@ -207,5 +209,6 @@ export default function AppAdmin() {
         </div>
       </BrowserRouter>
     </AuthProvider>
+  </ErrorBoundary>
   );
 }

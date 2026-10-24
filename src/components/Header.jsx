@@ -25,7 +25,6 @@ export function Header() {
           </div>
           <div className="brand-text">
             <span className="brand-title">Family Directory</span>
-            <span className="brand-sub">કુટુંબ ડિરેક્ટરી</span>
           </div>
         </Link>
 

@@ -16,9 +16,12 @@ import {
   getLocalMembers, 
   saveLocalMembers, 
   getLocalFamilies, 
-  saveLocalFamilies 
+  saveLocalFamilies,
+  saveLocalAll,
+  fetchLiveLocalData 
 } from "./localStore";
 import { matchesMemberSearch } from "../utils/searchFilter";
+import { sanitizeText, sanitizePhone, sanitizeDate } from "../utils/sanitize";
 
 const MEMBERS_COLLECTION = "members";
 const FAMILIES_COLLECTION = "families";
@@ -29,6 +32,7 @@ const FAMILIES_COLLECTION = "families";
  */
 export async function getMembersByFamilyId(familyId) {
   let members = [];
+  let firestoreSuccess = false;
 
   if (isFirebaseConfigured && db) {
     try {
@@ -40,13 +44,16 @@ export async function getMembersByFamilyId(familyId) {
       snapshot.forEach(docSnap => {
         members.push({ id: docSnap.id, ...docSnap.data() });
       });
+      firestoreSuccess = true;
     } catch (err) {
       console.warn("Firestore getMembersByFamilyId error, falling back to local store:", err);
       members = [];
     }
   }
 
-  if (members.length === 0) {
+  // Fallback to local store only if Firestore is unconfigured or errored out
+  if (!firestoreSuccess) {
+    await fetchLiveLocalData();
     const allLocal = getLocalMembers();
     const allFamilies = getLocalFamilies();
     const currentFamily = allFamilies.find(f => f.id === familyId || f.familyId === familyId);
@@ -83,11 +90,13 @@ export async function getMemberById(memberId) {
       if (docSnap.exists()) {
         return { id: docSnap.id, ...docSnap.data() };
       }
+      return null;
     } catch (err) {
       console.warn("Firestore getMemberById error, falling back to local store:", err);
     }
   }
 
+  await fetchLiveLocalData();
   const members = getLocalMembers();
   return members.find(m => m.id === memberId || m.memberId === memberId) || null;
 }
@@ -98,12 +107,29 @@ export async function getMemberById(memberId) {
 export async function createMember(familyId, memberData) {
   const now = new Date().toISOString();
 
+  // Clean and sanitize member payload
+  const cleanMemberData = {
+    fullName: sanitizeText(memberData.fullName, 100),
+    relationshipToHead: sanitizeText(memberData.relationshipToHead, 100),
+    dateOfBirth: sanitizeDate(memberData.dateOfBirth),
+    education: sanitizeText(memberData.education, 100),
+    occupation: sanitizeText(memberData.occupation, 100),
+    workplaceAddress: sanitizeText(memberData.workplaceAddress, 250),
+    mobileNumber: sanitizePhone(memberData.mobileNumber),
+    maternalSurname: sanitizeText(memberData.maternalSurname, 100),
+    maternalVillage: sanitizeText(memberData.maternalVillage, 100),
+    residentialAddress: sanitizeText(memberData.residentialAddress, 250),
+    photoUrl: "",
+    isPublicMobile: memberData.isPublicMobile !== false,
+    isPublicAddress: memberData.isPublicAddress !== false,
+    isPublic: true
+  };
+
   if (isFirebaseConfigured && db) {
     try {
       const docRef = await addDoc(collection(db, MEMBERS_COLLECTION), {
-        ...memberData,
+        ...cleanMemberData,
         familyId,
-        isPublic: true,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
@@ -115,13 +141,14 @@ export async function createMember(familyId, memberData) {
         updatedAt: serverTimestamp()
       });
 
-      return { id: docRef.id, memberId: docRef.id, ...memberData, familyId };
+      return { id: docRef.id, memberId: docRef.id, ...cleanMemberData, familyId };
     } catch (err) {
       console.warn("Firestore createMember error, falling back to local store:", err);
     }
   }
 
   // Local store
+  await fetchLiveLocalData();
   const members = getLocalMembers();
   const families = getLocalFamilies();
 
@@ -137,7 +164,6 @@ export async function createMember(familyId, memberData) {
   };
 
   members.push(newMember);
-  saveLocalMembers(members);
 
   // Update family member count
   const familyIndex = families.findIndex(f => f.id === familyId || f.familyId === familyId);
@@ -147,9 +173,9 @@ export async function createMember(familyId, memberData) {
       memberCount: (families[familyIndex].memberCount || 0) + 1,
       updatedAt: now
     };
-    saveLocalFamilies(families);
   }
 
+  await saveLocalAll(families, members);
   return newMember;
 }
 
@@ -159,29 +185,43 @@ export async function createMember(familyId, memberData) {
 export async function updateMember(memberId, updateData) {
   const now = new Date().toISOString();
 
+  // Sanitize fields if present
+  const cleanData = { ...updateData };
+  if (cleanData.fullName) cleanData.fullName = sanitizeText(cleanData.fullName, 100);
+  if (cleanData.relationshipToHead) cleanData.relationshipToHead = sanitizeText(cleanData.relationshipToHead, 100);
+  if (cleanData.dateOfBirth) cleanData.dateOfBirth = sanitizeDate(cleanData.dateOfBirth);
+  if (cleanData.education) cleanData.education = sanitizeText(cleanData.education, 100);
+  if (cleanData.occupation) cleanData.occupation = sanitizeText(cleanData.occupation, 100);
+  if (cleanData.workplaceAddress) cleanData.workplaceAddress = sanitizeText(cleanData.workplaceAddress, 250);
+  if (cleanData.mobileNumber) cleanData.mobileNumber = sanitizePhone(cleanData.mobileNumber);
+  if (cleanData.maternalSurname) cleanData.maternalSurname = sanitizeText(cleanData.maternalSurname, 100);
+  if (cleanData.maternalVillage) cleanData.maternalVillage = sanitizeText(cleanData.maternalVillage, 100);
+  if (cleanData.residentialAddress) cleanData.residentialAddress = sanitizeText(cleanData.residentialAddress, 250);
+
   if (isFirebaseConfigured && db) {
     try {
       const memberRef = doc(db, MEMBERS_COLLECTION, memberId);
       await updateDoc(memberRef, {
-        ...updateData,
+        ...cleanData,
         updatedAt: serverTimestamp()
       });
 
       // If updating head's name, update in family too
-      if (updateData.familyId && updateData.isHead) {
-        const familyRef = doc(db, FAMILIES_COLLECTION, updateData.familyId);
+      if (cleanData.familyId && cleanData.isHead) {
+        const familyRef = doc(db, FAMILIES_COLLECTION, cleanData.familyId);
         await updateDoc(familyRef, {
-          headFullName: updateData.fullName,
+          headFullName: cleanData.fullName,
           updatedAt: serverTimestamp()
         });
       }
 
-      return { id: memberId, ...updateData };
+      return { id: memberId, ...cleanData };
     } catch (err) {
       console.warn("Firestore updateMember error, falling back to local store:", err);
     }
   }
 
+  await fetchLiveLocalData();
   const members = getLocalMembers();
   const families = getLocalFamilies();
 
@@ -191,12 +231,11 @@ export async function updateMember(memberId, updateData) {
   const existing = members[index];
   const updatedMember = {
     ...existing,
-    ...updateData,
+    ...cleanData,
     updatedAt: now
   };
 
   members[index] = updatedMember;
-  saveLocalMembers(members);
 
   // Update family head name if applicable
   const isHead = (existing.relationshipToHead || '').toLowerCase().includes('head') || (existing.relationshipToHead || '').includes('વડા');
@@ -208,10 +247,10 @@ export async function updateMember(memberId, updateData) {
         headFullName: updateData.fullName,
         updatedAt: now
       };
-      saveLocalFamilies(families);
     }
   }
 
+  await saveLocalAll(families, members);
   return updatedMember;
 }
 
@@ -237,11 +276,11 @@ export async function deleteMember(memberId, familyId) {
     }
   }
 
+  await fetchLiveLocalData();
   const members = getLocalMembers();
   const families = getLocalFamilies();
 
   const filteredMembers = members.filter(m => m.id !== memberId && m.memberId !== memberId);
-  saveLocalMembers(filteredMembers);
 
   if (familyId) {
     const fIndex = families.findIndex(f => f.id === familyId || f.familyId === familyId);
@@ -251,10 +290,10 @@ export async function deleteMember(memberId, familyId) {
         ...families[fIndex],
         memberCount: Math.max(0, currentCount - 1)
       };
-      saveLocalFamilies(families);
     }
   }
 
+  await saveLocalAll(families, filteredMembers);
   return true;
 }
 
@@ -276,6 +315,7 @@ export async function searchMembersAndFamilies(queryText) {
         console.warn("Firestore families search fallback:", e);
       }
     }
+    await fetchLiveLocalData();
     return getLocalFamilies();
   })();
 
@@ -290,6 +330,7 @@ export async function searchMembersAndFamilies(queryText) {
         console.warn("Firestore members search fallback:", e);
       }
     }
+    await fetchLiveLocalData();
     return getLocalMembers();
   })();
 

@@ -14,7 +14,10 @@ import {
   ArrowLeft, 
   User, 
   Crown,
-  Filter 
+  Filter,
+  Briefcase,
+  GraduationCap,
+  Phone 
 } from "lucide-react";
 
 export function ManageMembers() {
@@ -100,9 +103,6 @@ export function ManageMembers() {
       <div className="manage-header-row">
         <div>
           <h1 className="page-title">Manage Members (સભ્યોનું સંચાલન)</h1>
-          <p className="page-subtitle">
-            Search, review, and manage member profiles across all families
-          </p>
         </div>
 
         <div className="filters-bar">
@@ -141,107 +141,188 @@ export function ManageMembers() {
           <p>Loading member directory...</p>
         </div>
       ) : filteredMembers.length > 0 ? (
-        <div className="table-responsive">
-          <table className="standard-table">
-            <thead>
-              <tr>
-                <th>Member</th>
-                <th>Relationship</th>
-                <th>Family (કુટુંબ)</th>
-                <th>Age / DOB</th>
-                <th>Occupation / Education</th>
-                <th className="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredMembers.map((mem) => {
-                const memId = mem.id || mem.memberId;
-                const fam = familyMap[mem.familyId];
-                const age = calculateAge(mem.dateOfBirth);
-                const isHead = (mem.relationshipToHead || '').toLowerCase().includes('head') || (mem.relationshipToHead || '').includes('વડા');
+        <>
+          {/* Desktop Table View */}
+          <div className="table-responsive desktop-table-view">
+            <table className="standard-table">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Relationship</th>
+                  <th>Family (કુટુંબ)</th>
+                  <th>Age / DOB</th>
+                  <th>Occupation / Education</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMembers.map((mem) => {
+                  const memId = mem.id || mem.memberId;
+                  const fam = familyMap[mem.familyId];
+                  const age = calculateAge(mem.dateOfBirth);
+                  const isHead = (mem.relationshipToHead || '').toLowerCase().includes('head') || (mem.relationshipToHead || '').includes('વડા');
 
-                return (
-                  <tr key={memId}>
-                    <td>
-                      <div className="member-cell">
-                        <div className="member-cell-avatar">
-                          {mem.photoUrl ? (
-                            <img src={mem.photoUrl} alt={mem.fullName} />
-                          ) : isHead ? (
-                            <Crown size={16} className="avatar-icon-head" />
-                          ) : (
-                            <User size={16} />
-                          )}
+                  return (
+                    <tr key={memId}>
+                      <td>
+                        <div className="member-cell">
+                          <div className="member-cell-avatar">
+                            {isHead ? (
+                              <Crown size={16} className="avatar-icon-head" />
+                            ) : (
+                              <User size={16} />
+                            )}
+                          </div>
+                          <div>
+                            <Link to={`/member/${memId}`} className="table-main-title hover-link">
+                              {mem.fullName}
+                            </Link>
+                            {mem.mobileNumber && (
+                              <div className="cell-sub">{mem.mobileNumber}</div>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <Link to={`/member/${memId}`} className="table-main-title hover-link">
-                            {mem.fullName}
+                      </td>
+                      <td>
+                        <span className={`relation-badge ${isHead ? 'relation-badge-head' : ''}`}>
+                          {mem.relationshipToHead || "Member"}
+                        </span>
+                      </td>
+                      <td>
+                        {fam ? (
+                          <Link to={`/family/${fam.id || fam.familyId}`} className="hover-link">
+                            {fam.headFullName}
                           </Link>
-                          {mem.mobileNumber && (
-                            <div className="cell-sub">{mem.mobileNumber}</div>
-                          )}
+                        ) : (
+                          <span className="text-muted">Unlinked</span>
+                        )}
+                      </td>
+                      <td>
+                        {age !== null ? (
+                          <span>{age} yrs</span>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
+                      <td>
+                        <div>{mem.occupation || "—"}</div>
+                        {mem.education && <div className="cell-sub">{mem.education}</div>}
+                      </td>
+                      <td className="text-right">
+                        <div className="action-buttons-group">
+                          <Link
+                            to={`/member/${memId}`}
+                            className="btn btn-secondary btn-xs"
+                            title="View Profile"
+                          >
+                            <ExternalLink size={13} />
+                            <span>View</span>
+                          </Link>
+                          <Link
+                            to={`/admin/members/${memId}/edit`}
+                            className="btn btn-secondary btn-xs"
+                            title="Edit Profile"
+                          >
+                            <Edit3 size={13} />
+                            <span>Edit</span>
+                          </Link>
+                          <button
+                            onClick={() => setMemberToDelete(mem)}
+                            className="btn btn-danger-outline btn-xs"
+                            title="Delete Member"
+                          >
+                            <Trash2 size={13} />
+                            <span>Delete</span>
+                          </button>
                         </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards View (No horizontal scrolling/swiping needed!) */}
+          <div className="mobile-family-cards-list">
+            {filteredMembers.map((mem) => {
+              const memId = mem.id || mem.memberId;
+              const fam = familyMap[mem.familyId];
+              const age = calculateAge(mem.dateOfBirth);
+              const isHead = (mem.relationshipToHead || '').toLowerCase().includes('head') || (mem.relationshipToHead || '').includes('વડા');
+
+              return (
+                <div key={memId} className="mobile-admin-family-card">
+                  <div className="mobile-member-card-header">
+                    <div className="mobile-member-name-row">
+                      <div className="member-avatar-box" style={{ width: 34, height: 34, flexShrink: 0 }}>
+                        {isHead ? <Crown size={17} className="avatar-icon-head" /> : <User size={17} />}
                       </div>
-                    </td>
-                    <td>
+                      <Link to={`/member/${memId}`} className="mobile-member-full-name">
+                        {mem.fullName}
+                      </Link>
+                    </div>
+
+                    <div className="mobile-member-sub-info">
                       <span className={`relation-badge ${isHead ? 'relation-badge-head' : ''}`}>
-                        {mem.relationshipToHead || "Member"}
+                        {isHead ? "👑 કુટુંબના વડા (Head)" : (mem.relationshipToHead || "Member")}
                       </span>
-                    </td>
-                    <td>
-                      {fam ? (
-                        <Link to={`/family/${fam.id || fam.familyId}`} className="hover-link">
-                          {fam.headFullName}
-                        </Link>
-                      ) : (
-                        <span className="text-muted">Unlinked</span>
+                      {fam && !isHead && (
+                        <span className="mobile-family-link">
+                          કુટુંબ: {fam.headFullName}
+                        </span>
                       )}
-                    </td>
-                    <td>
-                      {age !== null ? (
-                        <span>{age} yrs</span>
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
-                    </td>
-                    <td>
-                      <div>{mem.occupation || "—"}</div>
-                      {mem.education && <div className="cell-sub">{mem.education}</div>}
-                    </td>
-                    <td className="text-right">
-                      <div className="action-buttons-group">
-                        <Link
-                          to={`/member/${memId}`}
-                          className="btn btn-secondary btn-xs"
-                          title="View Profile"
-                        >
-                          <ExternalLink size={13} />
-                          <span>View</span>
-                        </Link>
-                        <Link
-                          to={`/admin/members/${memId}/edit`}
-                          className="btn btn-secondary btn-xs"
-                          title="Edit Profile"
-                        >
-                          <Edit3 size={13} />
-                          <span>Edit</span>
-                        </Link>
-                        <button
-                          onClick={() => setMemberToDelete(mem)}
-                          className="btn btn-danger-outline btn-xs"
-                          title="Delete Member"
-                        >
-                          <Trash2 size={13} />
-                          <span>Delete</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  </div>
+
+                  <div className="mobile-fam-meta">
+                    {age !== null && (
+                      <span className="mobile-meta-tag">
+                        <strong>ઉંમર:</strong> {age} વર્ષ
+                      </span>
+                    )}
+                    {mem.occupation && (
+                      <span className="mobile-meta-tag">
+                        <Briefcase size={12} /> {mem.occupation}
+                      </span>
+                    )}
+                    {mem.education && (
+                      <span className="mobile-meta-tag">
+                        <GraduationCap size={12} /> {mem.education}
+                      </span>
+                    )}
+                    {mem.mobileNumber && (
+                      <span className="mobile-meta-tag">
+                        <Phone size={12} /> {mem.mobileNumber}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mobile-fam-actions" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                    <Link
+                      to={`/member/${memId}`}
+                      className="btn btn-secondary btn-xs"
+                    >
+                      <ExternalLink size={13} /> View
+                    </Link>
+                    <Link
+                      to={`/admin/members/${memId}/edit`}
+                      className="btn btn-secondary btn-xs"
+                    >
+                      <Edit3 size={13} /> Edit
+                    </Link>
+                    <button
+                      onClick={() => setMemberToDelete(mem)}
+                      className="btn btn-danger-outline btn-xs"
+                    >
+                      <Trash2 size={13} /> Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       ) : (
         <div className="empty-state">
           <Users size={36} className="empty-icon" />

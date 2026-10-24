@@ -18,6 +18,7 @@ export function normalizeSearchText(text) {
  * - Education
  */
 export function matchesMemberSearch(member, family, query) {
+  if (!member) return false;
   const q = normalizeSearchText(query);
   if (!q) return true;
 
@@ -43,6 +44,7 @@ export function matchesMemberSearch(member, family, query) {
  * Checks whether a family matches a search query.
  */
 export function matchesFamilySearch(family, query) {
+  if (!family) return false;
   const q = normalizeSearchText(query);
   if (!q) return true;
 

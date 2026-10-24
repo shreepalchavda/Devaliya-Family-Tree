@@ -7,7 +7,7 @@
     "dev": "concurrently -n \"PUBLIC,ADMIN\" -c \"cyan,magenta\" \"npm run dev:public\" \"npm run dev:admin\"",
     "dev:public": "vite --port 5173",
     "dev:admin": "vite --config vite.admin.config.js --port 5174",
-    "build": "vite build && vite build --config vite.admin.config.js",
+    "build": "vite build",
     "build:public": "vite build",
     "build:admin": "vite build --config vite.admin.config.js",
     "lint": "oxlint",

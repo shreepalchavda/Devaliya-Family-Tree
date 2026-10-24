@@ -177,7 +177,6 @@ export function FamilyDetails() {
         <div className="members-section-header">
           <div className="header-titles">
             <h2>Family Members (કુટુંબના સભ્યોની યાદી)</h2>
-            <p>Including the family head and all associated members</p>
           </div>
           {isAdmin && (
             <Link 

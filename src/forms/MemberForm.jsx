@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FormField } from "../components/FormField";
-import { uploadMemberPhoto } from "../services/storageService";
 import { calculateAge } from "../utils/calculateAge";
-import { Upload } from "lucide-react";
 
 const COMMON_RELATIONSHIPS = [
   "પુત્ર (Son)",
@@ -44,14 +42,10 @@ export function MemberForm({
   const [maternalSurname, setMaternalSurname] = useState("");
   const [maternalVillage, setMaternalVillage] = useState("");
   const [residentialAddress, setResidentialAddress] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
-  const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState("");
   const [isPublicMobile, setIsPublicMobile] = useState(true);
   const [isPublicAddress, setIsPublicAddress] = useState(true);
 
   const [errors, setErrors] = useState({});
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     if (initialData) {
@@ -73,20 +67,10 @@ export function MemberForm({
       setMaternalSurname(initialData.maternalSurname || "");
       setMaternalVillage(initialData.maternalVillage || "");
       setResidentialAddress(initialData.residentialAddress || "");
-      setPhotoUrl(initialData.photoUrl || "");
-      setPhotoPreview(initialData.photoUrl || "");
       setIsPublicMobile(initialData.isPublicMobile !== false);
       setIsPublicAddress(initialData.isPublicAddress !== false);
     }
   }, [initialData]);
-
-  const handlePhotoSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setPhotoFile(file);
-      setPhotoPreview(URL.createObjectURL(file));
-    }
-  };
 
   const calculatedAge = calculateAge(dateOfBirth);
 
@@ -109,19 +93,6 @@ export function MemberForm({
     if (e && e.preventDefault) e.preventDefault();
     if (!validate()) return;
 
-    let finalPhotoUrl = photoUrl;
-    if (photoFile) {
-      setUploadingPhoto(true);
-      try {
-        finalPhotoUrl = await uploadMemberPhoto(photoFile, initialData?.id || 'new_member');
-      } catch (err) {
-        setErrors(prev => ({ ...prev, photo: err.message || "Failed to upload photo" }));
-        setUploadingPhoto(false);
-        return;
-      }
-      setUploadingPhoto(false);
-    }
-
     const relationshipToHead = 
       relationshipType === "Other (અન્ય સંબંધ લખો)" 
         ? customRelationship.trim() 
@@ -138,7 +109,6 @@ export function MemberForm({
       maternalSurname: maternalSurname.trim(),
       maternalVillage: maternalVillage.trim(),
       residentialAddress: residentialAddress.trim(),
-      photoUrl: finalPhotoUrl,
       isPublicMobile,
       isPublicAddress
     };
@@ -155,9 +125,6 @@ export function MemberForm({
       setOccupation("");
       setWorkplaceAddress("");
       setMobileNumber("");
-      setPhotoUrl("");
-      setPhotoFile(null);
-      setPhotoPreview("");
       setErrors({});
     }
   };
@@ -345,32 +312,6 @@ export function MemberForm({
           />
         </FormField>
 
-        <div className="form-row photo-upload-row">
-          <div className="photo-preview-container">
-            {photoPreview ? (
-              <img src={photoPreview} alt="Preview" className="photo-preview-img" />
-            ) : (
-              <div className="photo-placeholder-box">No Photo</div>
-            )}
-          </div>
-
-          <div className="photo-input-group">
-            <label className="btn btn-secondary file-upload-btn">
-              <Upload size={16} />
-              <span>Upload Member Photo</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoSelect}
-                style={{ display: "none" }}
-                disabled={isSubmitting || uploadingPhoto}
-              />
-            </label>
-            <span className="file-info-text">Supports JPG, PNG, WebP up to 5MB</span>
-            {errors.photo && <span className="field-error-message">{errors.photo}</span>}
-          </div>
-        </div>
-
         <div className="privacy-checkboxes">
           <label className="checkbox-label">
             <input
@@ -397,7 +338,7 @@ export function MemberForm({
             type="button"
             className="btn btn-secondary btn-lg"
             onClick={(e) => handleFormSubmit(e, true)}
-            disabled={isSubmitting || uploadingPhoto}
+            disabled={isSubmitting}
           >
             + Save & Add Another (સાચવો અને બીજો ઉમેરો)
           </button>
@@ -406,9 +347,9 @@ export function MemberForm({
           type="button"
           onClick={(e) => handleFormSubmit(e, false)}
           className="btn btn-primary btn-lg"
-          disabled={isSubmitting || uploadingPhoto}
+          disabled={isSubmitting}
         >
-          {isSubmitting || uploadingPhoto ? "Saving..." : isEdit ? "Update Member Profile" : "Save Member (સભ્ય સાચવો)"}
+          {isSubmitting ? "Saving..." : isEdit ? "Update Member Profile" : "Save Member (સભ્ય સાચવો)"}
         </button>
       </div>
     </form>

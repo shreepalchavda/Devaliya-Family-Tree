@@ -87,9 +87,6 @@ export function AddMemberPage() {
 
       <div className="form-page-header">
         <h1 className="page-title">Add Family Member (સભ્ય ઉમેરો)</h1>
-        <p className="page-subtitle">
-          Adding new relative into the family of <strong>{family?.headFullName}</strong>
-        </p>
       </div>
 
       {error && (

@@ -1,7 +1,31 @@
 {
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/admin/:path*",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/families/:path*",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/members/:path*",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/((?!assets/|.*\\..*).*)",
       "destination": "/index.html"
     }
   ]

@@ -89,9 +89,6 @@ export function EditFamilyPage() {
 
       <div className="form-page-header">
         <h1 className="page-title">Edit Kutumb (કુટુંબ વિગત સુધારો)</h1>
-        <p className="page-subtitle">
-          Update the ancestral village, Mataji Madh, or family head name
-        </p>
       </div>
 
       {error && (
