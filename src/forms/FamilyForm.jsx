@@ -4,14 +4,8 @@ import { calculateAge } from "../utils/calculateAge";
 import { 
   CheckCircle2, 
   AlertCircle, 
-  UserPlus, 
   Plus, 
-  Trash2, 
-  User, 
-  Calendar, 
-  Briefcase,
-  ChevronDown,
-  ChevronUp
+  Trash2
 } from "lucide-react";
 
 const COMMON_RELATIONSHIPS = [
@@ -32,6 +26,80 @@ const COMMON_RELATIONSHIPS = [
   "Other (અન્ય સંબંધ લખો)"
 ];
 
+const FEMALE_KEYWORDS = [
+  "પુત્રી", "પત્ની", "માતા", "બહેન", "પુત્રવધૂ", "વધૂ", "પૌત્રી", "દોહિત્રી", "કાકી", "મામી", "માસી", "ફોઈ", "ભત્રીજી", "ભાણી", "ગૃહિણી",
+  "daughter", "wife", "mother", "sister", "aunt", "niece", "granddaughter", "housewife", "female", "women", "woman"
+];
+
+function isFemaleRel(rel) {
+  if (!rel) return false;
+  const lower = rel.toLowerCase();
+  return FEMALE_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+const OCCUPATION_OPTIONS = [
+  "Farmer (ખેતી)",
+  "Business (વેપાર / બિઝનેસ)",
+  "Job / Service (નોકરી / સર્વિસ)",
+  "Student (વિદ્યાર્થી / અભ્યાસ)",
+  "Housewife (ગૃહિણી)",
+  "Retired (નિવૃત્ત)",
+  "Other (અન્ય)"
+];
+
+function parseOccupation(initialOcc, defaultType = "Farmer (ખેતી)") {
+  if (!initialOcc) return { type: defaultType, detail: "" };
+  const occ = initialOcc.toLowerCase();
+  if (occ.includes("ગૃહિણી") || occ.includes("housewife")) {
+    return { type: "Housewife (ગૃહિણી)", detail: "" };
+  }
+  if (occ.includes("ખેતી") || occ.includes("farmer")) {
+    return { type: "Farmer (ખેતી)", detail: "" };
+  }
+  if (occ.includes("વિદ્યાર્થી") || occ.includes("student") || occ.includes("અભ્યાસ") || occ.includes("study")) {
+    return { type: "Student (વિદ્યાર્થી / અભ્યાસ)", detail: "" };
+  }
+  if (occ.includes("નિવૃત્ત") || occ.includes("retired")) {
+    return { type: "Retired (નિવૃત્ત)", detail: "" };
+  }
+  if (occ.includes("job") || occ.includes("નોકરી") || occ.includes("સર્વિસ") || occ.includes("service") || occ.includes("engineer") || occ.includes("manager") || occ.includes("teacher")) {
+    return { 
+      type: "Job / Service (નોકરી / સર્વિસ)", 
+      detail: initialOcc.replace(/\s*\(Job\)/gi, "").replace(/\s*\(Business\/Job\)/gi, "").trim() 
+    };
+  }
+  if (occ.includes("વેપાર") || occ.includes("business")) {
+    return { 
+      type: "Business (વેપાર / બિઝનેસ)", 
+      detail: initialOcc.replace(/\s*\(Business\)/gi, "").replace(/\s*\(Business\/Job\)/gi, "").trim() 
+    };
+  }
+  return { type: "Other (અન્ય)", detail: initialOcc };
+}
+
+function computeFinalOccupationAndWorkplace(occType, detail, workplace) {
+  if (occType === "Farmer (ખેતી)") return { occupation: "ખેતી (Farmer)", workplace: "" };
+  if (occType === "Housewife (ગૃહિણી)") return { occupation: "ગૃહિણી (Housewife)", workplace: "" };
+  if (occType === "Student (વિદ્યાર્થી / અભ્યાસ)") return { occupation: "વિદ્યાર્થી (Student)", workplace: "" };
+  if (occType === "Retired (નિવૃત્ત)") return { occupation: "નિવૃત્ત (Retired)", workplace: "" };
+  if (occType === "Business (વેપાર / બિઝનેસ)") {
+    return {
+      occupation: detail.trim() ? `${detail.trim()} (Business)` : "વેપાર (Business)",
+      workplace: (workplace || "").trim()
+    };
+  }
+  if (occType === "Job / Service (નોકરી / સર્વિસ)") {
+    return {
+      occupation: detail.trim() ? `${detail.trim()} (Job)` : "નોકરી (Job)",
+      workplace: (workplace || "").trim()
+    };
+  }
+  return {
+    occupation: detail.trim() || "અન્ય",
+    workplace: (workplace || "").trim()
+  };
+}
+
 export function FamilyForm({ 
   initialData = null, 
   initialHeadData = null, 
@@ -48,7 +116,8 @@ export function FamilyForm({
   const [showHeadDetails, setShowHeadDetails] = useState(false);
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [education, setEducation] = useState("");
-  const [occupation, setOccupation] = useState("");
+  const [headOccupationType, setHeadOccupationType] = useState("Farmer (ખેતી)");
+  const [headOccupationDetail, setHeadOccupationDetail] = useState("");
   const [workplaceAddress, setWorkplaceAddress] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [maternalSurname, setMaternalSurname] = useState("");
@@ -63,18 +132,18 @@ export function FamilyForm({
 
   // Current new member form fields
   const [memFullName, setMemFullName] = useState("");
+  const [memGender, setMemGender] = useState("Male");
   const [memRelation, setMemRelation] = useState("પુત્ર (Son)");
   const [memCustomRelation, setMemCustomRelation] = useState("");
   const [memDob, setMemDob] = useState("");
   const [memEducation, setMemEducation] = useState("");
-  const [memOccupation, setMemOccupation] = useState("");
+  const [memOccupationType, setMemOccupationType] = useState("Business (વેપાર / બિઝનેસ)");
+  const [memOccupationDetail, setMemOccupationDetail] = useState("");
   const [memWorkplace, setMemWorkplace] = useState("");
-  const [memMobile, setMemMobile] = useState("");
   const [memMaternalSurname, setMemMaternalSurname] = useState("");
   const [memMaternalVillage, setMemMaternalVillage] = useState("");
   const [memAddress, setMemAddress] = useState("");
-  const [memPublicMobile, setMemPublicMobile] = useState(true);
-  const [memPublicAddress, setMemPublicAddress] = useState(true);
+  const memPublicAddress = true;
   const [memError, setMemError] = useState("");
 
   // Errors & UI state
@@ -89,7 +158,11 @@ export function FamilyForm({
     if (initialHeadData) {
       setDateOfBirth(initialHeadData.dateOfBirth || "");
       setEducation(initialHeadData.education || "");
-      setOccupation(initialHeadData.occupation || "");
+      
+      const parsedHeadOcc = parseOccupation(initialHeadData.occupation, "Farmer (ખેતી)");
+      setHeadOccupationType(parsedHeadOcc.type);
+      setHeadOccupationDetail(parsedHeadOcc.detail);
+
       setWorkplaceAddress(initialHeadData.workplaceAddress || "");
       setMobileNumber(initialHeadData.mobileNumber || "");
       setMaternalSurname(initialHeadData.maternalSurname || "");
@@ -112,11 +185,32 @@ export function FamilyForm({
     if (!matajiMadhSthal.trim()) {
       errs.matajiMadhSthal = "Mataji Madh Sthal is required (માતાજીનું મઢ સ્થળ જરૂરી છે).";
     }
-    if (mobileNumber && !/^[0-9+ \-]{8,15}$/.test(mobileNumber.trim())) {
+    if (mobileNumber && !/^[0-9+ -]{8,15}$/.test(mobileNumber.trim())) {
       errs.mobileNumber = "Please enter a valid mobile number.";
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
+  };
+
+  const handleMemRelationChange = (newRel) => {
+    setMemRelation(newRel);
+    if (isFemaleRel(newRel)) {
+      setMemGender("Female");
+      if (newRel.includes("પત્ની") || newRel.includes("Wife") || newRel.includes("માતા") || newRel.includes("Mother") || newRel.includes("કાકી")) {
+        setMemOccupationType("Housewife (ગૃહિણી)");
+        setMemOccupationDetail("");
+      } else if (newRel.includes("પુત્રી") || newRel.includes("દોહિત્રી") || newRel.includes("પૌત્રી") || newRel.includes("Daughter")) {
+        setMemOccupationType("Student (વિદ્યાર્થી / અભ્યાસ)");
+        setMemOccupationDetail("");
+      }
+    } else {
+      setMemGender("Male");
+      if (newRel.includes("પૌત્ર") || newRel.includes("દોહિત્ર") || newRel.includes("ભત્રીજો")) {
+        setMemOccupationType("Student (વિદ્યાર્થી / અભ્યાસ)");
+      } else if (memOccupationType === "Housewife (ગૃહિણી)") {
+        setMemOccupationType("Job / Service (નોકરી / સર્વિસ)");
+      }
+    }
   };
 
   // Add a member to the pending member list
@@ -130,34 +224,43 @@ export function FamilyForm({
       ? (memCustomRelation.trim() || "અન્ય")
       : memRelation;
 
+    const { occupation: finalOcc, workplace: finalWp } = computeFinalOccupationAndWorkplace(
+      memOccupationType,
+      memOccupationDetail,
+      memWorkplace
+    );
+
     const newMemberItem = {
       tempId: "tmp-" + Date.now() + Math.random(),
       fullName: memFullName.trim(),
+      gender: isFemaleRel(relation) ? "Female" : (memGender || "Male"),
       relationshipToHead: relation,
       dateOfBirth: memDob,
       education: memEducation.trim(),
-      occupation: memOccupation.trim(),
-      workplaceAddress: memWorkplace.trim(),
-      mobileNumber: memMobile.trim(),
-      maternalSurname: memMaternalSurname.trim() || maternalSurname.trim(),
-      maternalVillage: memMaternalVillage.trim() || maternalVillage.trim(),
+      occupation: finalOcc,
+      workplaceAddress: finalWp,
+      maternalSurname: memMaternalSurname.trim(),
+      maternalVillage: memMaternalVillage.trim(),
       residentialAddress: memAddress.trim() || residentialAddress.trim(),
-      isPublicMobile: memPublicMobile,
       isPublicAddress: memPublicAddress,
       photoUrl: ""
     };
 
     setAdditionalMembers(prev => [...prev, newMemberItem]);
 
-    // Reset member fields for next member
+    // Reset member fields for next member (clean slate, no carryover)
     setMemFullName("");
+    setMemGender("Male");
     setMemRelation("પુત્ર (Son)");
     setMemCustomRelation("");
     setMemDob("");
     setMemEducation("");
-    setMemOccupation("");
+    setMemOccupationType("Business (વેપાર / બિઝનેસ)");
+    setMemOccupationDetail("");
     setMemWorkplace("");
-    setMemMobile("");
+    setMemMaternalSurname("");
+    setMemMaternalVillage("");
+    setMemAddress("");
     setMemError("");
 
     if (keepFormOpen) {
@@ -182,11 +285,18 @@ export function FamilyForm({
       headMemberId: initialData?.headMemberId
     };
 
+    const { occupation: finalHeadOcc, workplace: finalHeadWp } = computeFinalOccupationAndWorkplace(
+      headOccupationType,
+      headOccupationDetail,
+      workplaceAddress
+    );
+
     const headPayload = {
+      gender: "Male",
       dateOfBirth,
       education: education.trim(),
-      occupation: occupation.trim(),
-      workplaceAddress: workplaceAddress.trim(),
+      occupation: finalHeadOcc,
+      workplaceAddress: finalHeadWp,
       mobileNumber: mobileNumber.trim(),
       maternalSurname: maternalSurname.trim(),
       maternalVillage: maternalVillage.trim(),
@@ -202,19 +312,24 @@ export function FamilyForm({
         ? (memCustomRelation.trim() || "અન્ય")
         : memRelation;
 
+      const { occupation: finalOcc, workplace: finalWp } = computeFinalOccupationAndWorkplace(
+        memOccupationType,
+        memOccupationDetail,
+        memWorkplace
+      );
+
       finalMembers.push({
         tempId: "tmp-" + Date.now(),
         fullName: memFullName.trim(),
+        gender: isFemaleRel(relation) ? "Female" : (memGender || "Male"),
         relationshipToHead: relation,
         dateOfBirth: memDob,
         education: memEducation.trim(),
-        occupation: memOccupation.trim(),
-        workplaceAddress: memWorkplace.trim(),
-        mobileNumber: memMobile.trim(),
-        maternalSurname: memMaternalSurname.trim() || maternalSurname.trim(),
-        maternalVillage: memMaternalVillage.trim() || maternalVillage.trim(),
+        occupation: finalOcc,
+        workplaceAddress: finalWp,
+        maternalSurname: memMaternalSurname.trim(),
+        maternalVillage: memMaternalVillage.trim(),
         residentialAddress: memAddress.trim() || residentialAddress.trim(),
-        isPublicMobile: memPublicMobile,
         isPublicAddress: memPublicAddress,
         photoUrl: ""
       });
@@ -341,28 +456,99 @@ export function FamilyForm({
                   />
                 </FormField>
 
-                <FormField label="Occupation / Business" gujaratiLabel="વ્યવસાય / નોકરી">
-                  <input
-                    type="text"
+                <FormField label="Occupation / Category" gujaratiLabel="વ્યવસાય / કેટેગરી">
+                  <select
                     className="form-control"
-                    value={occupation}
-                    onChange={(e) => setOccupation(e.target.value)}
-                    placeholder="e.g. વેપાર, ખેતી, નોકરી..."
+                    value={headOccupationType}
+                    onChange={(e) => setHeadOccupationType(e.target.value)}
                     disabled={isSubmitting}
-                  />
+                  >
+                    {OCCUPATION_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
                 </FormField>
               </div>
 
-              <FormField label="Workplace / Business Address" gujaratiLabel="વ્યવસાયનું સરનામું">
-                <input
-                  type="text"
-                  className="form-control"
-                  value={workplaceAddress}
-                  onChange={(e) => setWorkplaceAddress(e.target.value)}
-                  placeholder="Office / Shop / Factory address"
-                  disabled={isSubmitting}
-                />
-              </FormField>
+              {/* Head Dynamic Occupation Details */}
+
+              {headOccupationType === "Business (વેપાર / બિઝનેસ)" && (
+                <div className="form-row">
+                  <FormField label="Business Details" gujaratiLabel="વેપાર / બિઝનેસની વિગત">
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={headOccupationDetail}
+                      onChange={(e) => setHeadOccupationDetail(e.target.value)}
+                      placeholder="e.g. કરિયાણા સ્ટોર / ટેક્સટાઇલ / કન્સ્ટ્રક્શન"
+                      disabled={isSubmitting}
+                    />
+                  </FormField>
+
+                  <FormField label="Shop / Workplace Address" gujaratiLabel="દુકાન / પેઢી / ઓફિસનું સરનામું">
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={workplaceAddress}
+                      onChange={(e) => setWorkplaceAddress(e.target.value)}
+                      placeholder="e.g. દુકાન નં. 12, મેઈન બજાર, કલોલ"
+                      disabled={isSubmitting}
+                    />
+                  </FormField>
+                </div>
+              )}
+
+              {headOccupationType === "Job / Service (નોકરી / સર્વિસ)" && (
+                <div className="form-row">
+                  <FormField label="Job Title / Company" gujaratiLabel="કંપની / હોદ્દો / નોકરી">
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={headOccupationDetail}
+                      onChange={(e) => setHeadOccupationDetail(e.target.value)}
+                      placeholder="e.g. સોફ્ટવેર એન્જિનિયર / બેંક મેનેજર / શિક્ષક"
+                      disabled={isSubmitting}
+                    />
+                  </FormField>
+
+                  <FormField label="Company / Office Address" gujaratiLabel="ઓફિસ / કંપનીનું સરનામું">
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={workplaceAddress}
+                      onChange={(e) => setWorkplaceAddress(e.target.value)}
+                      placeholder="e.g. ઇન્ફોસિટી, ગાંધીનગર"
+                      disabled={isSubmitting}
+                    />
+                  </FormField>
+                </div>
+              )}
+
+              {headOccupationType === "Other (અન્ય)" && (
+                <div className="form-row">
+                  <FormField label="Occupation Details" gujaratiLabel="વ્યવસાયની વિગત">
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={headOccupationDetail}
+                      onChange={(e) => setHeadOccupationDetail(e.target.value)}
+                      placeholder="e.g. કલાકાર, લેખક, સામાજિક કાર્યકર..."
+                      disabled={isSubmitting}
+                    />
+                  </FormField>
+
+                  <FormField label="Workplace Address" gujaratiLabel="વ્યવસાયનું સરનામું">
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={workplaceAddress}
+                      onChange={(e) => setWorkplaceAddress(e.target.value)}
+                      placeholder="સરનામું"
+                      disabled={isSubmitting}
+                    />
+                  </FormField>
+                </div>
+              )}
 
               <div className="form-row">
                 <FormField label="Maternal Family Surname" gujaratiLabel="મોસાળની અટક">
@@ -504,7 +690,7 @@ export function FamilyForm({
                   <select
                     className="form-control"
                     value={memRelation}
-                    onChange={(e) => setMemRelation(e.target.value)}
+                    onChange={(e) => handleMemRelationChange(e.target.value)}
                   >
                     {COMMON_RELATIONSHIPS.map((rel) => (
                       <option key={rel} value={rel}>{rel}</option>
@@ -526,6 +712,17 @@ export function FamilyForm({
               )}
 
               <div className="form-row">
+                <FormField label="Gender" gujaratiLabel="જાતિ" required>
+                  <select
+                    className="form-control"
+                    value={memGender}
+                    onChange={(e) => setMemGender(e.target.value)}
+                  >
+                    <option value="Male">Male (પુરુષ)</option>
+                    <option value="Female">Female (સ્ત્રી)</option>
+                  </select>
+                </FormField>
+
                 <FormField label="Date of Birth" gujaratiLabel="જન્મ તારીખ">
                   <input
                     type="date"
@@ -534,60 +731,263 @@ export function FamilyForm({
                     onChange={(e) => setMemDob(e.target.value)}
                   />
                 </FormField>
-
-                <FormField label="Mobile Number" gujaratiLabel="મોબાઈલ નંબર">
-                  <input
-                    type="tel"
-                    className="form-control"
-                    value={memMobile}
-                    onChange={(e) => setMemMobile(e.target.value)}
-                    placeholder="+91 94080 12345"
-                  />
-                </FormField>
               </div>
 
               <div className="form-row">
-                <FormField label="Education" gujaratiLabel="અભ્યાસ">
-                  <input
-                    type="text"
+                <FormField label="Occupation / Category" gujaratiLabel="વ્યવસાય / કેટેગરી" required>
+                  <select
                     className="form-control"
-                    value={memEducation}
-                    onChange={(e) => setMemEducation(e.target.value)}
-                    placeholder="e.g. B.Tech / ધોરણ 10 / M.Sc."
-                  />
-                </FormField>
-
-                <FormField label="Occupation / Student" gujaratiLabel="વ્યવસાય / વિદ્યાર્થી">
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={memOccupation}
-                    onChange={(e) => setMemOccupation(e.target.value)}
-                    placeholder="e.g. સોફ્ટવેર એન્જિનિયર / વિદ્યાર્થી"
-                  />
+                    value={memOccupationType}
+                    onChange={(e) => setMemOccupationType(e.target.value)}
+                  >
+                    {OCCUPATION_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
                 </FormField>
               </div>
 
-              <div className="form-row">
-                <FormField label="Workplace Address" gujaratiLabel="વ્યવસાયનું સરનામું">
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={memWorkplace}
-                    onChange={(e) => setMemWorkplace(e.target.value)}
-                    placeholder="Workplace or company address"
-                  />
-                </FormField>
+              {/* Dynamic Section for Inline Member based on Occupation */}
+              <div className="inline-occupation-dynamic-box">
+                {memOccupationType === "Farmer (ખેતી)" && (
+                  <div className="form-row">
+                    <FormField label="Education (Optional)" gujaratiLabel="અભ્યાસ (જો હોય તો)">
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={memEducation}
+                        onChange={(e) => setMemEducation(e.target.value)}
+                        placeholder="e.g. ધોરણ 10 / B.A. / H.S.C."
+                      />
+                    </FormField>
 
-                <FormField label="Maternal Village" gujaratiLabel="મોસાળનું ગામ">
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={memMaternalVillage}
-                    onChange={(e) => setMemMaternalVillage(e.target.value)}
-                    placeholder={maternalVillage ? `Default: ${maternalVillage}` : "e.g. ઉનાવા"}
-                  />
-                </FormField>
+                    <FormField label="Maternal Village" gujaratiLabel="મોસાળનું ગામ">
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={memMaternalVillage}
+                        onChange={(e) => setMemMaternalVillage(e.target.value)}
+                        placeholder="e.g. ઉનાવા / માણસા"
+                      />
+                    </FormField>
+                  </div>
+                )}
+
+                {memOccupationType === "Student (વિદ્યાર્થી / અભ્યાસ)" && (
+                  <div className="form-row">
+                    <FormField label="Education / Studies / Standard" gujaratiLabel="અભ્યાસની વિગત (ધોરણ / કોલેજ / ડિગ્રી)" required>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={memEducation}
+                        onChange={(e) => setMemEducation(e.target.value)}
+                        placeholder="e.g. ધોરણ 10 / ધોરણ 12 / B.Tech / MBBS / B.Com / MBA"
+                      />
+                    </FormField>
+
+                    <FormField label="Maternal Village" gujaratiLabel="મોસાળનું ગામ">
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={memMaternalVillage}
+                        onChange={(e) => setMemMaternalVillage(e.target.value)}
+                        placeholder="e.g. ઉનાવા / માણસા"
+                      />
+                    </FormField>
+                  </div>
+                )}
+
+                {memOccupationType === "Housewife (ગૃહિણી)" && (
+                  <div className="form-row">
+                    <FormField label="Education (Optional)" gujaratiLabel="અભ્યાસ (જો હોય તો)">
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={memEducation}
+                        onChange={(e) => setMemEducation(e.target.value)}
+                        placeholder="e.g. B.A. / ધોરણ 12 / B.Com"
+                      />
+                    </FormField>
+
+                    <FormField label="Maternal Village" gujaratiLabel="મોસાળનું ગામ">
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={memMaternalVillage}
+                        onChange={(e) => setMemMaternalVillage(e.target.value)}
+                        placeholder="e.g. ઉનાવા / માણસા"
+                      />
+                    </FormField>
+                  </div>
+                )}
+
+                {memOccupationType === "Retired (નિવૃત્ત)" && (
+                  <div className="form-row">
+                    <FormField label="Education (Optional)" gujaratiLabel="અભ્યાસ (જો હોય તો)">
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={memEducation}
+                        onChange={(e) => setMemEducation(e.target.value)}
+                        placeholder="e.g. Graduate / B.Com"
+                      />
+                    </FormField>
+
+                    <FormField label="Maternal Village" gujaratiLabel="મોસાળનું ગામ">
+                      <input
+                          type="text"
+                          className="form-control"
+                          value={memMaternalVillage}
+                          onChange={(e) => setMemMaternalVillage(e.target.value)}
+                          placeholder="e.g. ઉનાવા / માણસા"
+                        />
+                      </FormField>
+                    </div>
+                )}
+
+                {memOccupationType === "Business (વેપાર / બિઝનેસ)" && (
+                  <>
+                    <div className="form-row">
+                      <FormField label="Business Details" gujaratiLabel="વેપાર / બિઝનેસની વિગત" required>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={memOccupationDetail}
+                          onChange={(e) => setMemOccupationDetail(e.target.value)}
+                          placeholder="e.g. ટેક્સટાઇલ / કરિયાણા સ્ટોર / કન્સ્ટ્રક્શન"
+                        />
+                      </FormField>
+
+                      <FormField label="Workplace Address" gujaratiLabel="દુકાન / પેઢી / ઓફિસનું સરનામું">
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={memWorkplace}
+                          onChange={(e) => setMemWorkplace(e.target.value)}
+                          placeholder="દુકાન, ઓફિસ કે વ્યવસાયનું સ્થળ"
+                        />
+                      </FormField>
+                    </div>
+
+                    <div className="form-row">
+                      <FormField label="Education" gujaratiLabel="અભ્યાસ">
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={memEducation}
+                          onChange={(e) => setMemEducation(e.target.value)}
+                          placeholder="e.g. B.Com / MBA / Graduate"
+                        />
+                      </FormField>
+
+                      <FormField label="Maternal Village" gujaratiLabel="મોસાળનું ગામ">
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={memMaternalVillage}
+                          onChange={(e) => setMemMaternalVillage(e.target.value)}
+                          placeholder="e.g. ઉનાવા / માણસા"
+                        />
+                      </FormField>
+                    </div>
+                  </>
+                )}
+
+                {memOccupationType === "Job / Service (નોકરી / સર્વિસ)" && (
+                  <>
+                    <div className="form-row">
+                      <FormField label="Job Title / Company" gujaratiLabel="કંપની / હોદ્દો / નોકરી" required>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={memOccupationDetail}
+                          onChange={(e) => setMemOccupationDetail(e.target.value)}
+                          placeholder="e.g. સોફ્ટવેર એન્જિનિયર / બેંક મેનેજર / શિક્ષક"
+                        />
+                      </FormField>
+
+                      <FormField label="Workplace Address" gujaratiLabel="ઓફિસ / કંપનીનું સરનામું">
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={memWorkplace}
+                          onChange={(e) => setMemWorkplace(e.target.value)}
+                          placeholder="e.g. ઇન્ફોસિટી, ગાંધીનગર"
+                        />
+                      </FormField>
+                    </div>
+
+                    <div className="form-row">
+                      <FormField label="Education" gujaratiLabel="અભ્યાસ">
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={memEducation}
+                          onChange={(e) => setMemEducation(e.target.value)}
+                          placeholder="e.g. B.Tech / M.Sc. / B.Com"
+                        />
+                      </FormField>
+
+                      <FormField label="Maternal Village" gujaratiLabel="મોસાળનું ગામ">
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={memMaternalVillage}
+                          onChange={(e) => setMemMaternalVillage(e.target.value)}
+                          placeholder="e.g. ઉનાવા / માણસા"
+                        />
+                      </FormField>
+                    </div>
+                  </>
+                )}
+
+                {memOccupationType === "Other (અન્ય)" && (
+                  <>
+                    <div className="form-row">
+                      <FormField label="Occupation Details" gujaratiLabel="વ્યવસાયની વિગત" required>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={memOccupationDetail}
+                          onChange={(e) => setMemOccupationDetail(e.target.value)}
+                          placeholder="e.g. કલાકાર, લેખક, સામાજિક કાર્યકર..."
+                        />
+                      </FormField>
+
+                      <FormField label="Workplace Address" gujaratiLabel="વ્યવસાયનું સરનામું">
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={memWorkplace}
+                          onChange={(e) => setMemWorkplace(e.target.value)}
+                          placeholder="સરનામું"
+                        />
+                      </FormField>
+                    </div>
+
+                    <div className="form-row">
+                      <FormField label="Education" gujaratiLabel="અભ્યાસ">
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={memEducation}
+                          onChange={(e) => setMemEducation(e.target.value)}
+                          placeholder="e.g. Graduate"
+                        />
+                      </FormField>
+
+                      <FormField label="Maternal Village" gujaratiLabel="મોસાળનું ગામ">
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={memMaternalVillage}
+                          onChange={(e) => setMemMaternalVillage(e.target.value)}
+                          placeholder="e.g. ઉનાવા / માણસા"
+                        />
+                      </FormField>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Action Buttons for adding this member */}

@@ -200,6 +200,15 @@ export function MemberDetails() {
                 </div>
               )}
 
+              {member.gender && (
+                <div className="detail-item">
+                  <span className="detail-label">Gender (જાતિ):</span>
+                  <span className="detail-value">
+                    {member.gender === 'Female' ? 'સ્ત્રી (Female)' : 'પુરુષ (Male)'}
+                  </span>
+                </div>
+              )}
+
               {formattedDob && (
                 <div className="detail-item">
                   <span className="detail-label">Date of Birth (જન્મ તારીખ):</span>
@@ -286,22 +295,24 @@ export function MemberDetails() {
             <h3 className="detail-section-title">Contact & Address (સંપર્ક અને સરનામું)</h3>
             
             <div className="detail-rows-list">
-              <div className="detail-item">
-                <span className="detail-label">Mobile Number:</span>
-                {canShowMobile ? (
-                  <span className="detail-value highlight-contact">
-                    <Phone size={15} className="inline-icon" />
-                    <a href={`tel:${member.mobileNumber}`}>{member.mobileNumber}</a>
-                    {member.isPublicMobile === false && isAdmin && (
-                      <span className="privacy-badge private">(Admin visible only)</span>
-                    )}
-                  </span>
-                ) : (
-                  <span className="detail-value text-muted">
-                    <PhoneOff size={15} className="inline-icon" /> Private / Not disclosed publicly
-                  </span>
-                )}
-              </div>
+              {member.mobileNumber && (
+                <div className="detail-item">
+                  <span className="detail-label">Mobile Number:</span>
+                  {canShowMobile ? (
+                    <span className="detail-value highlight-contact">
+                      <Phone size={15} className="inline-icon" />
+                      <a href={`tel:${member.mobileNumber}`}>{member.mobileNumber}</a>
+                      {member.isPublicMobile === false && isAdmin && (
+                        <span className="privacy-badge private">(Admin visible only)</span>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="detail-value text-muted">
+                      <PhoneOff size={15} className="inline-icon" /> Private / Not disclosed publicly
+                    </span>
+                  )}
+                </div>
+              )}
 
               {member.residentialAddress && (
                 <div className="detail-item">

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getAllFamilies } from "../services/familyService";
-import { getLocalMembers } from "../services/localStore";
-import { deleteMember } from "../services/memberService";
+import { deleteMember, getAllMembers } from "../services/memberService";
 import { calculateAge } from "../utils/calculateAge";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { 
@@ -43,7 +42,7 @@ export function ManageMembers() {
       });
       setFamilyMap(fMap);
 
-      const mems = getLocalMembers();
+      const mems = await getAllMembers();
       setMembers(mems);
     } catch (err) {
       console.error("Error loading members:", err);

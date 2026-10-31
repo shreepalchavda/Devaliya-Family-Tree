@@ -12,8 +12,10 @@ import {
   Home, 
   MapPin, 
   ArrowLeft,
-  Sparkles 
+  Sparkles,
+  FileDown 
 } from "lucide-react";
+import { downloadFamilyPdf, downloadAllFamiliesMasterPdf } from "../utils/exportFamilyPdf";
 
 export function ManageFamilies() {
   const [families, setFamilies] = useState([]);
@@ -21,6 +23,39 @@ export function ManageFamilies() {
   const [loading, setLoading] = useState(true);
   const [familyToDelete, setFamilyToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [downloadingFamId, setDownloadingFamId] = useState(null);
+  const [isExportingMaster, setIsExportingMaster] = useState(false);
+  const [masterExportProgress, setMasterExportProgress] = useState("");
+
+  const handleExportMasterPdf = async () => {
+    if (isExportingMaster) return;
+    setIsExportingMaster(true);
+    setMasterExportProgress("Starting Master PDF export...");
+    try {
+      await downloadAllFamiliesMasterPdf(families, ({ current, total, status }) => {
+        setMasterExportProgress(status);
+      });
+    } catch (err) {
+      console.error("Master PDF Export Error:", err);
+      alert("Failed to export Master Directory PDF: " + (err.message || "Unknown error"));
+    } finally {
+      setIsExportingMaster(false);
+      setMasterExportProgress("");
+    }
+  };
+
+  const handleDownloadPdf = async (fam) => {
+    const famId = fam.id || fam.familyId;
+    setDownloadingFamId(famId);
+    try {
+      await downloadFamilyPdf(fam);
+    } catch (err) {
+      console.error("PDF download failed:", err);
+      alert("Failed to download PDF: " + (err.message || "Unknown error"));
+    } finally {
+      setDownloadingFamId(null);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -75,10 +110,23 @@ export function ManageFamilies() {
           <span>Back to Dashboard</span>
         </Link>
 
-        <Link to="/admin/families/new" className="btn btn-primary btn-sm">
-          <Plus size={16} />
-          <span>Add Kutumb (કુટુંબ ઉમેરો)</span>
-        </Link>
+        <div className="admin-nav-actions">
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={handleExportMasterPdf}
+            disabled={isExportingMaster}
+            title="Download single Master PDF containing all registered families"
+          >
+            <FileDown size={15} />
+            <span>{isExportingMaster ? masterExportProgress || "Exporting..." : "Export All to PDF (સંપૂર્ણ PDF)"}</span>
+          </button>
+
+          <Link to="/admin/families/new" className="btn btn-primary btn-sm">
+            <Plus size={16} />
+            <span>Add Kutumb (કુટુંબ ઉમેરો)</span>
+          </Link>
+        </div>
       </div>
 
       <div className="manage-header-row">
@@ -142,6 +190,16 @@ export function ManageFamilies() {
                       </td>
                       <td className="text-right">
                         <div className="action-buttons-group">
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadPdf(fam)}
+                            disabled={downloadingFamId === famId}
+                            className="btn btn-secondary btn-xs"
+                            title="Download Family PDF (કોષ્ટક સાથે PDF ડાઉનલોડ)"
+                          >
+                            <FileDown size={13} />
+                            <span>{downloadingFamId === famId ? "PDF..." : "PDF"}</span>
+                          </button>
                           <Link
                             to={`/family/${famId}`}
                             className="btn btn-secondary btn-xs"
@@ -212,6 +270,15 @@ export function ManageFamilies() {
                   </div>
 
                   <div className="mobile-fam-actions">
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadPdf(fam)}
+                      disabled={downloadingFamId === famId}
+                      className="btn btn-secondary btn-xs"
+                      title="Download Family PDF"
+                    >
+                      <FileDown size={13} /> {downloadingFamId === famId ? "PDF..." : "PDF"}
+                    </button>
                     <Link
                       to={`/family/${famId}`}
                       className="btn btn-secondary btn-xs"

@@ -1,9 +1,26 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Users, MapPin, Sparkles, ChevronRight } from "lucide-react";
+import { Users, MapPin, Sparkles, ChevronRight, FileDown } from "lucide-react";
+import { downloadFamilyPdf } from "../utils/exportFamilyPdf";
 
 export function FamilyCard({ family }) {
   const familyId = family.id || family.familyId;
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      await downloadFamilyPdf(family);
+    } catch (err) {
+      console.error("PDF download failed:", err);
+      alert("Failed to download PDF. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <Link to={`/family/${familyId}`} className="family-card" aria-label={`View family of ${family.headFullName}`}>
@@ -37,8 +54,26 @@ export function FamilyCard({ family }) {
       </div>
 
       <div className="family-card-footer">
-        <span className="view-details-text">View Family Details</span>
-        <ChevronRight size={16} className="arrow-icon" />
+        <div className="view-link-group">
+          <span className="view-details-text">View Family Details</span>
+          <ChevronRight size={16} className="arrow-icon" />
+        </div>
+
+        <button
+          type="button"
+          className="family-pdf-btn"
+          onClick={handleDownload}
+          disabled={downloading}
+          title="Download Family PDF (કુટુંબ વિગત PDF ડાઉનલોડ)"
+          aria-label="Download Family PDF"
+        >
+          {downloading ? (
+            <span className="pdf-btn-spinner" />
+          ) : (
+            <FileDown size={14} className="pdf-btn-icon" />
+          )}
+          <span>{downloading ? "PDF..." : "PDF"}</span>
+        </button>
       </div>
     </Link>
   );

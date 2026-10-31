@@ -591,6 +591,65 @@ a {
   color: var(--accent-color);
 }
 
+.view-link-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--primary-color);
+  transition: color 0.2s ease;
+}
+
+.family-card:hover .view-link-group {
+  color: var(--primary-dark);
+}
+
+.family-pdf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-sm);
+  background-color: rgba(15, 118, 110, 0.08);
+  color: #0f766e;
+  border: 1px solid rgba(15, 118, 110, 0.35);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  line-height: 1.2;
+}
+
+.family-pdf-btn:hover:not(:disabled) {
+  background-color: #0f766e;
+  color: #ffffff;
+  border-color: #0f766e;
+  box-shadow: 0 2px 6px rgba(15, 118, 110, 0.25);
+  transform: translateY(-1px);
+}
+
+.family-pdf-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.pdf-btn-spinner {
+  width: 11px;
+  height: 11px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+.family-nav-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 /* ==========================================================================
    Family Details Page
    ========================================================================== */
@@ -1403,6 +1462,31 @@ a {
   background-color: #f8faff;
 }
 
+.master-pdf-action-card {
+  border-color: #ccfbf1;
+  background-color: #f0fdfa;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  width: 100%;
+}
+
+.master-pdf-action-card:hover {
+  border-color: #0f766e;
+  background-color: #e6fffa;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.12);
+}
+
+.master-pdf-action-card .pdf-action-icon {
+  color: #0f766e;
+}
+
+.admin-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .action-card-text {
   flex: 1;
   display: flex;
@@ -1768,6 +1852,34 @@ a {
   background-color: var(--success-bg);
   border: 1px solid var(--success-border);
   color: var(--success-color);
+}
+
+.field-note-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.9rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.88rem;
+  color: #166534;
+  line-height: 1.4;
+}
+
+.field-note-tag {
+  font-weight: 700;
+  background-color: #dcfce7;
+  color: #15803d;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-size: 0.82rem;
+}
+
+.field-note-text {
+  font-weight: 500;
 }
 
 /* States */

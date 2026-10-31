@@ -14,8 +14,10 @@ import {
   Plus, 
   Edit3, 
   Trash2,
-  AlertCircle 
+  AlertCircle,
+  FileDown 
 } from "lucide-react";
+import { downloadFamilyPdf } from "../utils/exportFamilyPdf";
 
 export function FamilyDetails() {
   const { familyId } = useParams();
@@ -28,6 +30,20 @@ export function FamilyDetails() {
   const [error, setError] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    if (!family || isDownloadingPdf) return;
+    setIsDownloadingPdf(true);
+    try {
+      await downloadFamilyPdf(family, members);
+    } catch (err) {
+      console.error("Failed to download family PDF:", err);
+      alert("Error generating PDF: " + (err.message || "Unknown error"));
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
 
   const loadFamilyData = async () => {
     setLoading(true);
@@ -109,32 +125,45 @@ export function FamilyDetails() {
           <span>Back to All Families</span>
         </Link>
 
-        {isAdmin && (
-          <div className="admin-actions-bar">
-            <Link 
-              to={`/admin/families/${targetFamilyId}/members/new`} 
-              className="btn btn-primary btn-sm"
-            >
-              <Plus size={16} />
-              <span>Add Member (સભ્ય ઉમેરો)</span>
-            </Link>
-            <Link 
-              to={`/admin/families/${targetFamilyId}/edit`} 
-              className="btn btn-secondary btn-sm"
-            >
-              <Edit3 size={16} />
-              <span>Edit Family</span>
-            </Link>
-            <button 
-              onClick={() => setIsDeleteModalOpen(true)} 
-              className="btn btn-danger-outline btn-sm"
-              title="Delete Family"
-            >
-              <Trash2 size={16} />
-              <span>Delete</span>
-            </button>
-          </div>
-        )}
+        <div className="family-nav-right-actions">
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={handleDownloadPdf}
+            disabled={isDownloadingPdf}
+            title="Download complete family details in PDF format with table"
+          >
+            <FileDown size={16} />
+            <span>{isDownloadingPdf ? "Creating PDF..." : "Download PDF (PDF ડાઉનલોડ)"}</span>
+          </button>
+
+          {isAdmin && (
+            <div className="admin-actions-bar">
+              <Link 
+                to={`/admin/families/${targetFamilyId}/members/new`} 
+                className="btn btn-primary btn-sm"
+              >
+                <Plus size={16} />
+                <span>Add Member (સભ્ય ઉમેરો)</span>
+              </Link>
+              <Link 
+                to={`/admin/families/${targetFamilyId}/edit`} 
+                className="btn btn-secondary btn-sm"
+              >
+                <Edit3 size={16} />
+                <span>Edit Family</span>
+              </Link>
+              <button 
+                onClick={() => setIsDeleteModalOpen(true)} 
+                className="btn btn-danger-outline btn-sm"
+                title="Delete Family"
+              >
+                <Trash2 size={16} />
+                <span>Delete</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Main Family Head Information Banner */}

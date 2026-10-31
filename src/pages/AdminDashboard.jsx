@@ -1,23 +1,43 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getAllFamilies } from "../services/familyService";
-import { getLocalMembers } from "../services/localStore";
 import { 
   Users, 
   Home, 
   Plus, 
-  Settings, 
-  UserPlus, 
   ChevronRight, 
   ShieldCheck, 
   MapPin, 
-  Sparkles 
+  Sparkles,
+  FileDown,
+  FileText,
+  Download
 } from "lucide-react";
+import { downloadAllFamiliesMasterPdf } from "../utils/exportFamilyPdf";
 
 export function AdminDashboard() {
   const [stats, setStats] = useState({ totalFamilies: 0, totalMembers: 0 });
   const [recentFamilies, setRecentFamilies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isExportingMaster, setIsExportingMaster] = useState(false);
+  const [masterExportProgress, setMasterExportProgress] = useState("");
+
+  const handleExportMasterPdf = async () => {
+    if (isExportingMaster) return;
+    setIsExportingMaster(true);
+    setMasterExportProgress("Starting Master PDF export...");
+    try {
+      await downloadAllFamiliesMasterPdf(null, ({ current, total, status }) => {
+        setMasterExportProgress(status);
+      });
+    } catch (err) {
+      console.error("Master PDF Export Error:", err);
+      alert("Failed to export Master Directory PDF: " + (err.message || "Unknown error"));
+    } finally {
+      setIsExportingMaster(false);
+      setMasterExportProgress("");
+    }
+  };
 
   useEffect(() => {
     async function loadStats() {
@@ -48,6 +68,17 @@ export function AdminDashboard() {
         <div>
           <h1 className="admin-title">Admin Dashboard</h1>
         </div>
+
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          onClick={handleExportMasterPdf}
+          disabled={isExportingMaster}
+          title="Export all families and member records into a single master PDF document"
+        >
+          <FileDown size={16} />
+          <span>{isExportingMaster ? masterExportProgress || "Exporting..." : "Export All to PDF (સંપૂર્ણ ડિરેક્ટરી)"}</span>
+        </button>
       </div>
 
       {/* Metrics Row */}
@@ -113,6 +144,21 @@ export function AdminDashboard() {
             </div>
             <ChevronRight size={18} className="action-arrow" />
           </Link>
+
+          <button
+            type="button"
+            className="action-card master-pdf-action-card"
+            onClick={handleExportMasterPdf}
+            disabled={isExportingMaster}
+            title="Download single Master PDF containing all registered families"
+          >
+            <FileText size={22} className="pdf-action-icon" />
+            <div className="action-card-text">
+              <strong>Export All to PDF (સંપૂર્ણ ડિરેક્ટરી PDF)</strong>
+              <span>{isExportingMaster ? masterExportProgress : "Single PDF booklet with all families and member tables"}</span>
+            </div>
+            <Download size={18} className="action-arrow" />
+          </button>
         </div>
       </div>
 

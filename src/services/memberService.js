@@ -27,6 +27,28 @@ const MEMBERS_COLLECTION = "members";
 const FAMILIES_COLLECTION = "families";
 
 /**
+ * Fetch all members across all families.
+ */
+export async function getAllMembers() {
+  if (isFirebaseConfigured && db) {
+    try {
+      const q = query(collection(db, MEMBERS_COLLECTION));
+      const snapshot = await getDocs(q);
+      const members = [];
+      snapshot.forEach(docSnap => {
+        members.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      return members;
+    } catch (err) {
+      console.warn("Firestore getAllMembers error, fallback to local store:", err);
+    }
+  }
+
+  await fetchLiveLocalData();
+  return getLocalMembers();
+}
+
+/**
  * Get all members belonging to a family.
  * Head is placed first, followed by other members.
  */
@@ -106,21 +128,25 @@ export async function getMemberById(memberId) {
  */
 export async function createMember(familyId, memberData) {
   const now = new Date().toISOString();
+  const isHead = (memberData.relationshipToHead || '').toLowerCase().includes('head') || (memberData.relationshipToHead || '').includes('વડા');
 
-  // Clean and sanitize member payload
+  // Clean and sanitize member payload - Mobile number is only stored for the Family Head
   const cleanMemberData = {
     fullName: sanitizeText(memberData.fullName, 100),
+    gender: sanitizeText(memberData.gender || "", 20),
     relationshipToHead: sanitizeText(memberData.relationshipToHead, 100),
     dateOfBirth: sanitizeDate(memberData.dateOfBirth),
     education: sanitizeText(memberData.education, 100),
     occupation: sanitizeText(memberData.occupation, 100),
     workplaceAddress: sanitizeText(memberData.workplaceAddress, 250),
-    mobileNumber: sanitizePhone(memberData.mobileNumber),
+    ...(isHead && memberData.mobileNumber ? {
+      mobileNumber: sanitizePhone(memberData.mobileNumber),
+      isPublicMobile: memberData.isPublicMobile !== false
+    } : {}),
     maternalSurname: sanitizeText(memberData.maternalSurname, 100),
     maternalVillage: sanitizeText(memberData.maternalVillage, 100),
     residentialAddress: sanitizeText(memberData.residentialAddress, 250),
     photoUrl: "",
-    isPublicMobile: memberData.isPublicMobile !== false,
     isPublicAddress: memberData.isPublicAddress !== false,
     isPublic: true
   };
@@ -188,6 +214,7 @@ export async function updateMember(memberId, updateData) {
   // Sanitize fields if present
   const cleanData = { ...updateData };
   if (cleanData.fullName) cleanData.fullName = sanitizeText(cleanData.fullName, 100);
+  if (cleanData.gender) cleanData.gender = sanitizeText(cleanData.gender, 20);
   if (cleanData.relationshipToHead) cleanData.relationshipToHead = sanitizeText(cleanData.relationshipToHead, 100);
   if (cleanData.dateOfBirth) cleanData.dateOfBirth = sanitizeDate(cleanData.dateOfBirth);
   if (cleanData.education) cleanData.education = sanitizeText(cleanData.education, 100);

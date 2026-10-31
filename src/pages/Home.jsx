@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getAllFamilies } from "../services/familyService";
-import { getLocalMembers, getLocalFamilies } from "../services/localStore";
 import { searchMembersAndFamilies } from "../services/memberService";
 import { SearchBar } from "../components/SearchBar";
 import { FamilyCard } from "../components/FamilyCard";
